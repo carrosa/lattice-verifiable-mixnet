@@ -112,7 +112,9 @@ static inline uint64_t load_40(const unsigned char *x)
 
 static inline int64_t cosac_comp(const unsigned char *r, const double x)
 {
-	uint64_t res = *((uint64_t *)(&x));
+	//uint64_t res = *((uint64_t *)(&x));
+    uint64_t res;
+    memcpy(&res, &x, sizeof(x));
 	uint64_t res_mantissa;
 	uint64_t res_exponent;
 	uint64_t r1;
