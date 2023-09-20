@@ -1,5 +1,6 @@
 #include <math.h>
 #include <stdlib.h>
+#include <iostream>
 
 #include <flint/flint.h>
 #include <flint/fmpz_mod_poly.h>
@@ -260,7 +261,10 @@ static int rej_sampling(params::poly_q z[WIDTH], params::poly_q v[WIDTH], uint64
     }
 
     // Generate a random seed using the system's random number generator
-    getrandom(buf, sizeof(buf), 0);
+    ssize_t grret = getrandom(buf, sizeof(buf), 0);
+    if (grret == -1) {
+        throw "Could not generate a random seed. Check if something is wrong with system prng.";
+    }
     // Convert the random bytes to an integer seed
     memcpy(&seed, buf, sizeof(buf));
     // Seed GMP's random number generator with the generated seed

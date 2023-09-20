@@ -19,7 +19,10 @@ void ghl_sample_message(params::poly_q & m) {
 
     // Sample random coefficients for the polynomial.
     for (size_t j = 0; j < params::poly_p::degree / 2; j += 32) {
-        getrandom(&buf, sizeof(buf), 0);
+        ssize_t grret = getrandom(&buf, sizeof(buf), 0);
+        if (grret == -1) {
+            throw "Could not generate a random seed. Check if something is wrong with system prng.";
+        }
         for (size_t k = 0; k < 64; k += 2) {
             mpz_set_ui(coeffs[j + k / 2], (buf >> k) % PRIMEP);
         }
@@ -46,7 +49,10 @@ void bgv_sample_message(params::poly_p & m) {
     }
 
     for (size_t j = 0; j < params::poly_p::degree; j += 32) {
-        getrandom(&buf, sizeof(buf), 0);
+        ssize_t grret = getrandom(&buf, sizeof(buf), 0);
+        if (grret == -1) {
+            throw "Could not generate a random seed. Check if something is wrong with system prng.";
+        }
         for (size_t k = 0; k < 64; k += 2) {
             mpz_set_ui(coeffs[j + k / 2], (buf >> k) % PRIMEP);
         }

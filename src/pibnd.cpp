@@ -123,7 +123,10 @@ static int pibnd_rej_sampling(params::poly_q Z[V][NTI], params::poly_q SC[V][NTI
     }
 
     // Get random bytes into buf
-    getrandom(buf, sizeof(buf), 0);
+    ssize_t grret = getrandom(buf, sizeof(buf), 0);
+    if (grret == -1) {
+        throw "Could not generate a random seed. Check if something is wrong with system prng.";
+    }
 
     // Copy the random bytes into seed
     memcpy(&seed, buf, sizeof(buf));

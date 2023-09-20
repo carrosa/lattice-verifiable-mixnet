@@ -12,7 +12,8 @@
 
 #include <x86intrin.h>
 
-using namespace nfl;
+using namespace
+nfl;
 
 /* Box-Muller sampler precision: 53 bits */
 #define FP_PRECISION 53
@@ -68,14 +69,14 @@ static const double sqrt_pi2 = 2 / (M_SQRT1_2 * M_2_SQRTPI);
 
 /* CDT table */
 static const __m256i V_CDT[][2] = {{{2200310400551559144, 2200310400551559144, 2200310400551559144, 2200310400551559144}, {3327841033070651387, 3327841033070651387, 3327841033070651387, 3327841033070651387}},
-{{7912151619254726620, 7912151619254726620, 7912151619254726620, 7912151619254726620}, {380075531178589176, 380075531178589176, 380075531178589176, 380075531178589176}},
-{{5167367257772081627, 5167367257772081627, 5167367257772081627, 5167367257772081627}, {11604843442081400, 11604843442081400, 11604843442081400, 11604843442081400}},
-{{5081592746475748971, 5081592746475748971, 5081592746475748971, 5081592746475748971}, {90134450315532, 90134450315532, 90134450315532, 90134450315532}},
-{{6522074513864805092, 6522074513864805092, 6522074513864805092, 6522074513864805092}, {175786317361, 175786317361, 175786317361, 175786317361}},
-{{2579734681240182346, 2579734681240182346, 2579734681240182346, 2579734681240182346}, {85801740, 85801740, 85801740, 85801740}},
-{{8175784047440310133, 8175784047440310133, 8175784047440310133, 8175784047440310133}, {10472, 10472, 10472, 10472}},
-{{2947787991558061753, 2947787991558061753, 2947787991558061753, 2947787991558061753}, {0, 0, 0, 0}},
-{{22489665999543, 22489665999543, 22489665999543, 22489665999543}, {0, 0, 0, 0}}};
+                                   {{7912151619254726620, 7912151619254726620, 7912151619254726620, 7912151619254726620}, {380075531178589176,  380075531178589176,  380075531178589176,  380075531178589176}},
+                                   {{5167367257772081627, 5167367257772081627, 5167367257772081627, 5167367257772081627}, {11604843442081400,   11604843442081400,   11604843442081400,   11604843442081400}},
+                                   {{5081592746475748971, 5081592746475748971, 5081592746475748971, 5081592746475748971}, {90134450315532,      90134450315532,      90134450315532,      90134450315532}},
+                                   {{6522074513864805092, 6522074513864805092, 6522074513864805092, 6522074513864805092}, {175786317361,        175786317361,        175786317361,        175786317361}},
+                                   {{2579734681240182346, 2579734681240182346, 2579734681240182346, 2579734681240182346}, {85801740,            85801740,            85801740,            85801740}},
+                                   {{8175784047440310133, 8175784047440310133, 8175784047440310133, 8175784047440310133}, {10472,               10472,               10472,               10472}},
+                                   {{2947787991558061753, 2947787991558061753, 2947787991558061753, 2947787991558061753}, {0,                   0,                   0,                   0}},
+                                   {{22489665999543,      22489665999543,      22489665999543,      22489665999543},      {0,                   0,                   0,                   0}}};
 
 static const __m256i V_CDT_LOW_MASK = {CDT_LOW_MASK, CDT_LOW_MASK, CDT_LOW_MASK, CDT_LOW_MASK};
 
@@ -83,130 +84,126 @@ static const __m256i V_K_K_K_K = {BINARY_SAMPLER_K, BINARY_SAMPLER_K, BINARY_SAM
 
 /* coefficients of the exp evaluation polynomial */
 static const __m256i EXP_COFF[] = {{0x3e833b70ffa2c5d4, 0x3e833b70ffa2c5d4, 0x3e833b70ffa2c5d4, 0x3e833b70ffa2c5d4},
-								   {0x3eb4a480fda7e6e1, 0x3eb4a480fda7e6e1, 0x3eb4a480fda7e6e1, 0x3eb4a480fda7e6e1},
-								   {0x3ef01b254493363f, 0x3ef01b254493363f, 0x3ef01b254493363f, 0x3ef01b254493363f},
-								   {0x3f242e0e0aa273cc, 0x3f242e0e0aa273cc, 0x3f242e0e0aa273cc, 0x3f242e0e0aa273cc},
-								   {0x3f55d8a2334ed31b, 0x3f55d8a2334ed31b, 0x3f55d8a2334ed31b, 0x3f55d8a2334ed31b},
-								   {0x3f83b2aa56db0f1a, 0x3f83b2aa56db0f1a, 0x3f83b2aa56db0f1a, 0x3f83b2aa56db0f1a},
-								   {0x3fac6b08e11fc57e, 0x3fac6b08e11fc57e, 0x3fac6b08e11fc57e, 0x3fac6b08e11fc57e},
-								   {0x3fcebfbdff556072, 0x3fcebfbdff556072, 0x3fcebfbdff556072, 0x3fcebfbdff556072},
-								   {0x3fe62e42fefa7fe6, 0x3fe62e42fefa7fe6, 0x3fe62e42fefa7fe6, 0x3fe62e42fefa7fe6},
-								   {0x3ff0000000000000, 0x3ff0000000000000, 0x3ff0000000000000, 0x3ff0000000000000}};
+                                   {0x3eb4a480fda7e6e1, 0x3eb4a480fda7e6e1, 0x3eb4a480fda7e6e1, 0x3eb4a480fda7e6e1},
+                                   {0x3ef01b254493363f, 0x3ef01b254493363f, 0x3ef01b254493363f, 0x3ef01b254493363f},
+                                   {0x3f242e0e0aa273cc, 0x3f242e0e0aa273cc, 0x3f242e0e0aa273cc, 0x3f242e0e0aa273cc},
+                                   {0x3f55d8a2334ed31b, 0x3f55d8a2334ed31b, 0x3f55d8a2334ed31b, 0x3f55d8a2334ed31b},
+                                   {0x3f83b2aa56db0f1a, 0x3f83b2aa56db0f1a, 0x3f83b2aa56db0f1a, 0x3f83b2aa56db0f1a},
+                                   {0x3fac6b08e11fc57e, 0x3fac6b08e11fc57e, 0x3fac6b08e11fc57e, 0x3fac6b08e11fc57e},
+                                   {0x3fcebfbdff556072, 0x3fcebfbdff556072, 0x3fcebfbdff556072, 0x3fcebfbdff556072},
+                                   {0x3fe62e42fefa7fe6, 0x3fe62e42fefa7fe6, 0x3fe62e42fefa7fe6, 0x3fe62e42fefa7fe6},
+                                   {0x3ff0000000000000, 0x3ff0000000000000, 0x3ff0000000000000, 0x3ff0000000000000}};
 
 static const __m256d V_INT64_DOUBLE = {0x0010000000000000, 0x0010000000000000, 0x0010000000000000, 0x0010000000000000};
 static const __m256d V_DOUBLE_INT64 = {0x0018000000000000, 0x0018000000000000, 0x0018000000000000, 0x0018000000000000};
 
 static const __m256i V_EXP_MANTISSA_MASK = {EXP_MANTISSA_MASK, EXP_MANTISSA_MASK, EXP_MANTISSA_MASK, EXP_MANTISSA_MASK};
-static const __m256i V_RES_MANTISSA = {1LL << EXP_MANTISSA_PRECISION, 1LL << EXP_MANTISSA_PRECISION, 1LL << EXP_MANTISSA_PRECISION, 1LL << EXP_MANTISSA_PRECISION};
-static const __m256i V_RES_EXPONENT = {R_EXPONENT_L - 1023 + 1, R_EXPONENT_L - 1023 + 1, R_EXPONENT_L - 1023 + 1, R_EXPONENT_L - 1023 + 1};
+static const __m256i V_RES_MANTISSA = {1LL << EXP_MANTISSA_PRECISION, 1LL << EXP_MANTISSA_PRECISION,
+                                       1LL << EXP_MANTISSA_PRECISION, 1LL << EXP_MANTISSA_PRECISION};
+static const __m256i V_RES_EXPONENT = {R_EXPONENT_L - 1023 + 1, R_EXPONENT_L - 1023 + 1, R_EXPONENT_L - 1023 + 1,
+                                       R_EXPONENT_L - 1023 + 1};
 static const __m256i V_R_MANTISSA_MASK = {R_MANTISSA_MASK, R_MANTISSA_MASK, R_MANTISSA_MASK, R_MANTISSA_MASK};
 static const __m256i V_1 = {1, 1, 1, 1};
 static const __m256i V_DOUBLE_ONE = {DOUBLE_ONE, DOUBLE_ONE, DOUBLE_ONE, DOUBLE_ONE};
 
-static const __m256d V_K_2_INV = {BINARY_SAMPLER_K_2_INV, BINARY_SAMPLER_K_2_INV, BINARY_SAMPLER_K_2_INV, BINARY_SAMPLER_K_2_INV};
+static const __m256d V_K_2_INV = {BINARY_SAMPLER_K_2_INV, BINARY_SAMPLER_K_2_INV, BINARY_SAMPLER_K_2_INV,
+                                  BINARY_SAMPLER_K_2_INV};
 
-static inline uint64_t load_40(const unsigned char *x)
-{
-	return ((uint64_t)(*x)) | (((uint64_t)(*(x + 1))) << 8) | (((uint64_t)(*(x + 2))) << 16) | (((uint64_t)(*(x + 3))) << 24) | (((uint64_t)(*(x + 4))) << 32);
+static inline uint64_t load_40(const unsigned char *x) {
+    return ((uint64_t) (*x)) | (((uint64_t) (*(x + 1))) << 8) | (((uint64_t) (*(x + 2))) << 16) |
+           (((uint64_t) (*(x + 3))) << 24) | (((uint64_t) (*(x + 4))) << 32);
 }
 
-static inline int64_t cosac_comp(const unsigned char *r, const double x)
-{
-	//uint64_t res = *((uint64_t *)(&x));
+static inline int64_t cosac_comp(const unsigned char *r, const double x) {
     uint64_t res;
     memcpy(&res, &x, sizeof(x));
-	uint64_t res_mantissa;
-	uint64_t res_exponent;
-	uint64_t r1;
-	uint64_t r2;
-	uint64_t r_mantissa;
-	uint64_t r_exponent;
+    uint64_t res_mantissa;
+    uint64_t res_exponent;
+    uint64_t r1;
+    uint64_t r2;
+    uint64_t r_mantissa;
+    uint64_t r_exponent;
 
-	res_mantissa = (res & COSAC_EXP_MANTISSA_MASK) | (1LL << COSAC_EXP_MANTISSA_PRECISION);
-	res_exponent = COSAC_R_EXPONENT_L - 0x3ff + 1 + (res >> COSAC_EXP_MANTISSA_PRECISION);
+    res_mantissa = (res & COSAC_EXP_MANTISSA_MASK) | (1LL << COSAC_EXP_MANTISSA_PRECISION);
+    res_exponent = COSAC_R_EXPONENT_L - 0x3ff + 1 + (res >> COSAC_EXP_MANTISSA_PRECISION);
 
-	r1 = *((uint64_t *)r);
-	r2 = load_40(r + 8);
+    r1 = *((uint64_t *) r);
+    r2 = load_40(r + 8);
 
-	r_mantissa = r1 & COSAC_R_MANTISSA_MASK;
-	r_exponent = (r1 >> COSAC_R_MANTISSA_PRECISION) | (r2 << (64 - COSAC_R_MANTISSA_PRECISION));
+    r_mantissa = r1 & COSAC_R_MANTISSA_MASK;
+    r_exponent = (r1 >> COSAC_R_MANTISSA_PRECISION) | (r2 << (64 - COSAC_R_MANTISSA_PRECISION));
 
-	return (res == COSAC_DOUBLE_ONE) || ((r_mantissa < res_mantissa) && (r_exponent < (1LL << res_exponent)));
+    return (res == COSAC_DOUBLE_ONE) || ((r_mantissa < res_mantissa) &&
+                                         (r_exponent < (uint64_t) (1LL << res_exponent)));
 }
 
 /* New COSAC sampler.
  * This is the sampling algorithm from:
  * Shuo Sun, Yongbin Zhou, Yunfeng Ji, Rui Zhang, & Yang Tao. (2021). Generic, Efficient and Isochronous Gaussian Sampling over the Integers.
  * https://eprint.iacr.org/2021/199 */
-int64_t sample_z(const double center, const double sigma)
-{
-	unsigned char r[DISCRETE_BYTES];
+int64_t sample_z(const double center, const double sigma) {
+    unsigned char r[DISCRETE_BYTES];
 
-	double c, cr, rc;
-	double yr, rej;
-	double sigma2;
-	double yrc;
+    double c, cr, rc;
+    double yr, rej;
+    double sigma2;
+    double yrc;
 
-	uint64_t i;
-	int64_t cmp1;
-	uint64_t head = 2;
+    uint64_t i;
+    int64_t cmp1;
+    uint64_t head = 2;
 
-	unsigned char r_bm[BOX_MULLER_BYTES];
+    unsigned char r_bm[BOX_MULLER_BYTES];
 
-	double r1, r2;
-	double norm[2];
+    double r1, r2;
+    double norm[2];
 
-	cr = round(center);
-	c = center - cr;
+    cr = round(center);
+    c = center - cr;
 
-	sigma2 = -sigma * sigma * 2;
+    sigma2 = -sigma * sigma * 2;
 
-	rc = exp(c * c / sigma2) / (sigma * sqrt_pi2);
+    rc = exp(c * c / sigma2) / (sigma * sqrt_pi2);
 
-	fastrandombytes(r, COMP_ENTRY_SIZE);
+    fastrandombytes(r, COMP_ENTRY_SIZE);
 
-	if (cosac_comp(r, rc))
-	{
-		return cr;
-	}
+    if (cosac_comp(r, rc)) {
+        return cr;
+    }
 
-	while (1)
-	{
-		fastrandombytes(r, DISCRETE_BYTES);
+    while (1) {
+        fastrandombytes(r, DISCRETE_BYTES);
 
-		for (i = 0; i < 2; i++, head++)
-		{
-			if (head >= 2)
-			{
-				head = 0;
+        for (i = 0; i < 2; i++, head++) {
+            if (head >= 2) {
+                head = 0;
 
-				fastrandombytes((unsigned char *)r_bm, BOX_MULLER_BYTES);
+                fastrandombytes((unsigned char *) r_bm, BOX_MULLER_BYTES);
 
-				r1 = (((*((uint64_t *)r)) & FP_MASK) + 1) * FP_FACTOR;
-				r2 = (((*((uint64_t *)(r + 8))) & FP_MASK) + 1) * FP_FACTOR;
+                r1 = (((*((uint64_t *) r)) & FP_MASK) + 1) * FP_FACTOR;
+                r2 = (((*((uint64_t *) (r + 8))) & FP_MASK) + 1) * FP_FACTOR;
 
-				r1 = sqrt(-2 * log(r1)) * sigma;
-				r2 = r2 * pi2;
+                r1 = sqrt(-2 * log(r1)) * sigma;
+                r2 = r2 * pi2;
 
-				norm[0] = r1 * sin(r2);
-				norm[1] = r1 * cos(r2);
-			}
+                norm[0] = r1 * sin(r2);
+                norm[1] = r1 * cos(r2);
+            }
 
-			yr = norm[head] + c;
+            yr = norm[head] + c;
 
-			cmp1 = yr >= 0;
+            cmp1 = yr >= 0;
 
-			yr = floor(yr) + cmp1;
+            yr = floor(yr) + cmp1;
 
-			yrc = yr - c;
-			rej = yrc + norm[head];
-			yrc = yrc - norm[head];
-			rej = exp(rej * yrc / sigma2);
+            yrc = yr - c;
+            rej = yrc + norm[head];
+            yrc = yrc - norm[head];
+            rej = exp(rej * yrc / sigma2);
 
-			if (cosac_comp(r + i * COMP_ENTRY_SIZE, rej))
-			{
-				return yr + cr;
-			}
-		}
-	}
+            if (cosac_comp(r + i * COMP_ENTRY_SIZE, rej)) {
+                return yr + cr;
+            }
+        }
+    }
 }

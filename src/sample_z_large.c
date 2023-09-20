@@ -116,7 +116,14 @@ static inline __uint128_t load_96(const unsigned char *x)
 
 static inline int64_t cosac_comp(const unsigned char *r, const __float128 x)
 {
-	__uint128_t res = *((__uint128_t *)(&x));
+    // Type punning with union
+    union {
+        __float128 f;
+        __uint128_t i;
+    } type_pun;
+    type_pun.f = x;
+    __uint128_t res = type_pun.i;
+
 	__uint128_t res_mantissa;
 	uint64_t res_exponent;
 	__uint128_t r1;
@@ -133,7 +140,7 @@ static inline int64_t cosac_comp(const unsigned char *r, const __float128 x)
 	r_mantissa = r1 & COSAC_R_MANTISSA_MASK;
 	r_exponent = (r1 >> COSAC_R_MANTISSA_PRECISION) | (r2 << (128 - COSAC_R_MANTISSA_PRECISION));
 
-	return (res == COSAC_FLOAT128_ONE) || ((r_mantissa < res_mantissa) && (r_exponent < (1LL << res_exponent)));
+	return (res == COSAC_FLOAT128_ONE) || ((r_mantissa < res_mantissa) && (r_exponent < (uint64_t)(1LL << res_exponent)));
 }
 
 /* New COSAC sampler.
