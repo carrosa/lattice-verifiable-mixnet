@@ -2,6 +2,10 @@
 #include "bench.h"
 #include "common.h"
 #include <sys/random.h>
+#include "sample_z_small.h"
+#include <flint/flint.h>
+#include <flint/fmpz_mod_poly.h>
+
 
 // Function to sample a message for the GHL encryption scheme.
 void ghl_sample_message(params::poly_q & m) {
@@ -91,6 +95,7 @@ void bgv_rdc(params::poly_p & m) {
 
 // Function to generate a key pair for the BGV encryption scheme.
 void bgv_keygen(bgvkey_t & pk, params::poly_q & sk) {
+    // Have to change to work with NTRU
     params::poly_q e = nfl::ZO_dist();  // Sample error polynomial.
     pk.a = nfl::uniform();  // Sample uniform polynomial for public key.
 
@@ -101,6 +106,98 @@ void bgv_keygen(bgvkey_t & pk, params::poly_q & sk) {
     // Compute the public key's second component.
     pk.b = pk.a * sk + (e + e + e);
 }
+
+// TODO - MOVE BELOW TO ntru.cpp
+
+/**
+ * INFO - THIS FUNCTION IS COPIED FROM shuffle.cpp
+ * @brief Computes the multiplicative inverse of a polynomial in a given field.
+ *
+ * @param inv Output parameter to store the computed inverse polynomial.
+ * @param p Input polynomial for which the inverse is to be computed.
+ */
+static void poly_inverse(params::poly_q & inv, params::poly_q p) {
+    // Declare an array to store coefficients of the polynomial
+    std::array < mpz_t, params::poly_q::degree > coeffs;
+    // Declare a variable to store the modulus of the field
+    fmpz_t q;
+    // Declare variables to store the polynomial and the irreducible polynomial
+    fmpz_mod_poly_t poly, irred;
+    // Declare a context variable for modular arithmetic operations
+    fmpz_mod_ctx_t ctx_q;
+
+    // Initialize the modulus variable
+    fmpz_init(q);
+    // Initialize the coefficients array with the appropriate bit size
+    for (size_t i = 0; i < params::poly_q::degree; i++) {
+        mpz_init2(coeffs[i], (params::poly_q::bits_in_moduli_product() << 2));
+    }
+
+    // Set the modulus value to the product of moduli for the polynomial
+    fmpz_set_mpz(q, params::poly_q::moduli_product());
+    // Initialize the context for modular arithmetic with the modulus
+    fmpz_mod_ctx_init(ctx_q, q);
+    // Initialize the polynomial and irreducible polynomial variables in the context
+    fmpz_mod_poly_init(poly, ctx_q);
+    fmpz_mod_poly_init(irred, ctx_q);
+
+    // Convert the polynomial to its coefficient representation
+    p.poly2mpz(coeffs);
+    // Define the irreducible polynomial for the field
+    fmpz_mod_poly_set_coeff_ui(irred, params::poly_q::degree, 1, ctx_q);
+    fmpz_mod_poly_set_coeff_ui(irred, 0, 1, ctx_q);
+
+    // Set the polynomial coefficients from the array
+    for (size_t i = 0; i < params::poly_q::degree; i++) {
+        fmpz_mod_poly_set_coeff_mpz(poly, i, coeffs[i], ctx_q);
+    }
+    // Compute the multiplicative inverse of the polynomial modulo the irreducible polynomial
+    fmpz_mod_poly_invmod(poly, poly, irred, ctx_q);
+
+    // Retrieve the coefficients of the inverse polynomial
+    for (size_t i = 0; i < params::poly_q::degree; i++) {
+        fmpz_mod_poly_get_coeff_mpz(coeffs[i], poly, i, ctx_q);
+    }
+
+    // Convert the coefficient representation back to the polynomial form
+    inv.mpz2poly(coeffs);
+
+    // Clear the memory allocated for the modulus
+    fmpz_clear(q);
+    // Clear the memory allocated for the coefficients array
+    for (size_t i = 0; i < params::poly_q::degree; i++) {
+        mpz_clear(coeffs[i]);
+    }
+}
+
+// Function to genereate a key pair for the NTRU encryption scheme
+void ntru_keygen(params::poly_q & pk, params::poly_q & sk) {
+    // Sample f and g
+    params::poly_q f;
+    params::poly_q g;
+    array<mpz_t, params::poly_q::degree> coeffs_f;
+    array<mpz_t, params::poly_q::degree> coeffs_g;
+    for (size_t k = 0; k < params::poly_q ::degree; k++) {
+        int64_t coeff_f = sample_z(0.0, SIGMA_NTRU);
+        int64_t coeff_g = sample_z(0.0, SIGMA_NTRU);
+        mpz_set_si(coeffs_f[k], coeff_f);
+        mpz_set_si(coeffs_g[k], coeff_g);
+    }
+    f.mpz2poly(coeffs_f);
+    g.mpz2poly(coeffs_g);
+    poly_inverse(f, f);
+
+    f.ntt_pow_phi();
+    g.ntt_pow_phi();
+
+    // TODO: Sample e?
+
+    pk = f * g;
+    sk = f;
+}
+
+// TODO - MOVE ABOVE TO ntru.cpp
+
 
 // Function to split a secret key into multiple shares.
 void bgv_keyshare(params::poly_q s[], size_t shares, params::poly_q & sk) {
@@ -115,6 +212,7 @@ void bgv_keyshare(params::poly_q s[], size_t shares, params::poly_q & sk) {
 
 // Function to encrypt a message using the BGV encryption scheme.
 void bgv_encrypt(bgvenc_t & c, bgvkey_t & pk, params::poly_p & m) {
+    // Change this to ntru
     std::array < mpz_t, DEGREE > coeffs;
     params::poly_q e1 = nfl::ZO_dist();  // Sample first error polynomial.
     params::poly_q e2 = nfl::ZO_dist();  // Sample second error polynomial.
@@ -157,6 +255,7 @@ void bgv_add(bgvenc_t & c, bgvenc_t & d, bgvenc_t & e) {
 
 // Function to decrypt a ciphertext using the BGV encryption scheme.
 void bgv_decrypt(params::poly_p & m, bgvenc_t & c, params::poly_q & sk) {
+    // Change to ntru
     std::array < mpz_t, DEGREE > coeffs;
     params::poly_q t = c.v - sk * c.u;  // Compute the decryption polynomial.
     mpz_t qDivBy2;  // Variable to store half the moduli product.
@@ -193,6 +292,7 @@ void bgv_decrypt(params::poly_p & m, bgvenc_t & c, params::poly_q & sk) {
 
 // Function to perform distributed decryption of a ciphertext.
 void bgv_distdec(params::poly_q & tj, bgvenc_t & c, params::poly_q & sj) {
+    // Change to ntru
     std::array < mpz_t, DEGREE > coeffs;
     params::poly_q mj, Ej;  // Intermediate polynomials.
     mpz_t qDivBy2, bound;  // Variables to store half the moduli product and a bound.

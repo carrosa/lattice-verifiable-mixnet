@@ -15,6 +15,9 @@ bdlop: src/bdlop.cpp src/bgv.cpp ${TEST} ${BENCH} ${INCLUDES}
 bgv: src/bgv.cpp ${TEST} ${BENCH} ${INCLUDES}
 	${CPP} ${CFLAGS} -DMAIN src/bgv.cpp ${TEST} ${BENCH} -o bgv ${LIBS}
 
+ntru: src/ntru.cpp ${TEST} ${BENCH} ${INCLUDES}
+	${CPP} ${CFLAGS} -DMAIN src/ntru.cpp ${TEST} ${BENCH} -o ntru ${LIBS}
+
 shuffle: src/shuffle.cpp src/bdlop.cpp ${TEST} ${BENCH} ${INCLUDES}
 	${CPP} ${CFLAGS} -c src/sample_z_small.c -o sample_z_small.o
 	${CPP} ${CFLAGS} -c src/bdlop.cpp -o bdlop.o
