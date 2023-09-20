@@ -318,7 +318,11 @@ static void lin_prover(params::poly_q y[WIDTH], params::poly_q _y[WIDTH],
 
     // Declare variables for the challenge, temporary polynomials, and coefficient arrays
     params::poly_q beta, tmp[WIDTH], _tmp[WIDTH];
-    array<mpz_t, params::poly_q::degree> coeffs;
+    // TODO: Array below is old
+    // array<mpz_t, params::poly_q::degree> coeffs;
+    array<mpz_t, params::poly_q::degree> coeffs1;
+    array<mpz_t, params::poly_q::degree> coeffs2;
+
     // Declare a variable to store half of the modulus
     mpz_t qDivBy2;
     // Variables to store the results of the rejection sampling
@@ -328,7 +332,8 @@ static void lin_prover(params::poly_q y[WIDTH], params::poly_q _y[WIDTH],
     mpz_init(qDivBy2);
     // Initialize the coefficient arrays with the appropriate bit size
     for (size_t i = 0; i < params::poly_q::degree; i++) {
-        mpz_init2(coeffs[i], (params::poly_q::bits_in_moduli_product() << 2));
+        mpz_init2(coeffs1[i], (params::poly_q::bits_in_moduli_product() << 2));
+        mpz_init2(coeffs2[i], (params::poly_q::bits_in_moduli_product() << 2));
     }
     // Compute half of the modulus
     mpz_fdiv_q_2exp(qDivBy2, params::poly_q::moduli_product(), 1);
@@ -337,8 +342,21 @@ static void lin_prover(params::poly_q y[WIDTH], params::poly_q _y[WIDTH],
         // Prover samples y and y' from a Gaussian distribution
         for (int i = 0; i < WIDTH; i++) {
             for (size_t k = 0; k < params::poly_q::degree; k++) {
+                int coeff1 = sample_z(0.0, SIGMA_C);
+                int coeff2 = sample_z(0.0, SIGMA_C);
+                mpz_set_si(coeffs1[k], coeff1);
+                mpz_set_si(coeffs2[k], coeff2);
+            }
+            y[i].mpz2poly(coeffs1);
+            y[i].ntt_pow_phi();
+            _y[i].mpz2poly(coeffs2);
+            _y[i].ntt_pow_phi();
+            /* TODO: This is the old one
+             * for (size_t k = 0; k < params::poly_q::degree; k++) {
                 int64_t coeff = sample_z(0.0, SIGMA_C);
                 mpz_set_si(coeffs[k], coeff);
+
+
             }
             y[i].mpz2poly(coeffs);
             y[i].ntt_pow_phi();
@@ -347,7 +365,7 @@ static void lin_prover(params::poly_q y[WIDTH], params::poly_q _y[WIDTH],
                 mpz_set_si(coeffs[k], coeff);
             }
             _y[i].mpz2poly(coeffs);
-            _y[i].ntt_pow_phi();
+            _y[i].ntt_pow_phi();*/
         }
 
         // Compute t and _t using the sampled y and y' and the commitment key
@@ -383,7 +401,8 @@ static void lin_prover(params::poly_q y[WIDTH], params::poly_q _y[WIDTH],
 
     // Clear the allocated memory for the variables
     for (size_t i = 0; i < params::poly_q::degree; i++) {
-        mpz_clear(coeffs[i]);
+        mpz_clear(coeffs1[i]);
+        mpz_clear(coeffs2[i]);
     }
     mpz_clear(qDivBy2);
 }
