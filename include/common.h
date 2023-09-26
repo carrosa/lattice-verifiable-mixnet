@@ -33,7 +33,7 @@ using namespace std;
 /* Large modulus. */
 #define PRIMEQ      "302231454903657293688833"
 /* Small modulus. */
-#define PRIMEP      3 // Should be 2
+#define PRIMEP      2
 /* Degree of the irreducible polynomial. */
 #define DEGREE      4096 //2048
 /* Sigma for the commitment gaussian distribution. */
@@ -88,12 +88,6 @@ class bgvenc_t {
 public:
     params::poly_q u;
     params::poly_q v;
-};
-
-/* Class that represents a NTRU key pair */
-class ntrukey_t {
-public:
-    params::poly_q h;
 };
 
 #include "util.hpp"

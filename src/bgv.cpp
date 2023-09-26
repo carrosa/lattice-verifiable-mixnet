@@ -103,8 +103,10 @@ void bgv_keygen(bgvkey_t & pk, params::poly_q & sk) {
     sk.ntt_pow_phi();  // Transform secret key.
     e.ntt_pow_phi();  // Transform error polynomial.
 
-    // Compute the public key's second component.
-    pk.b = pk.a * sk + (e + e + e);
+	pk.b = pk.a * sk;
+	for (size_t i = 0; i < PRIMEP; i++) {
+		pk.b = pk.b + e;
+	}
 }
 
 // TODO - MOVE BELOW TO ntru.cpp
@@ -231,11 +233,12 @@ void bgv_encrypt(bgvenc_t & c, bgvkey_t & pk, params::poly_p & m) {
     e2.ntt_pow_phi();  // Transform second error polynomial.
     r.ntt_pow_phi();  // Transform random polynomial.
 
-    // Compute the first component of the ciphertext.
-    c.u = pk.a * r + (e1 + e1 + e1);
-
-    // Compute the second component of the ciphertext.
-    c.v = pk.b * r + (e2 + e2 + e2);
+	c.u = pk.a * r;
+	c.v = pk.b * r;
+	for (size_t i = 0; i < PRIMEP; i++) {
+		c.u = c.u + e1;
+		c.v = c.v + e2;
+	}
 
     for (size_t i = 0; i < params::poly_q::degree; i++) {
         mpz_init2(coeffs[i], params::poly_q::bits_in_moduli_product() << 2);
@@ -325,28 +328,20 @@ void bgv_distdec(params::poly_q & tj, bgvenc_t & c, params::poly_q & sj) {
         mpz_init2(coeffs[i], params::poly_q::bits_in_moduli_product() << 2);
     }
 
-    // Compute half the moduli product.
-    mpz_fdiv_q_2exp(qDivBy2, params::poly_q::moduli_product(), 1);
-    mpz_set_str(bound, BOUND_D, 10);  // Set the bound.
-
-    // Sample a random polynomial.
-    Ej = nfl::uniform();
-
-    // Convert the polynomial to coefficients and center them.
-    Ej.poly2mpz(coeffs);
-    for (size_t i = 0; i < params::poly_q::degree; i++) {
-        util::center(coeffs[i], coeffs[i], params::poly_q::moduli_product(),
-                     qDivBy2);
-        mpz_mod(coeffs[i], coeffs[i], bound);
-    }
-
-    // Convert the coefficients back to a polynomial and transform it.
-    Ej.mpz2poly(coeffs);
-    Ej.ntt_pow_phi();
-
-    // Compute the intermediate polynomial for distributed decryption.
-    mj = sj * c.u;
-    tj = mj + (Ej + Ej + Ej);
+	Ej = nfl::uniform();
+	Ej.poly2mpz(coeffs);
+	for (size_t i = 0; i < params::poly_q::degree; i++) {
+		util::center(coeffs[i], coeffs[i], params::poly_q::moduli_product(),
+				qDivBy2);
+		mpz_mod(coeffs[i], coeffs[i], bound);
+	}
+	Ej.mpz2poly(coeffs);
+	Ej.ntt_pow_phi();
+	mj = sj * c.u;
+	tj = mj;
+	for (size_t i = 0; i < PRIMEP; i++) {
+		tj = tj + Ej;
+	}
 }
 
 void ntru_comb() {
