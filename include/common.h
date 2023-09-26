@@ -35,7 +35,7 @@ using namespace std;
 /* Small modulus. */
 #define PRIMEP      3 // Should be 2
 /* Degree of the irreducible polynomial. */
-#define DEGREE      4096
+#define DEGREE      4096 //2048
 /* Sigma for the commitment gaussian distribution. */
 #define SIGMA_C     (1u << 12)
 /* Sigma for the boundness proof. */

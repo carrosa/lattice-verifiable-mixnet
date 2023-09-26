@@ -177,7 +177,7 @@ void ntru_keygen(params::poly_q & pk, params::poly_q & sk) {
     params::poly_q g;
     array<mpz_t, params::poly_q::degree> coeffs_f;
     array<mpz_t, params::poly_q::degree> coeffs_g;
-    for (size_t k = 0; k < params::poly_q ::degree; k++) {
+    for (size_t k = 0; k < params::poly_q::degree; k++) {
         int64_t coeff_f = sample_z(0.0, SIGMA_NTRU);
         int64_t coeff_g = sample_z(0.0, SIGMA_NTRU);
         mpz_set_si(coeffs_f[k], coeff_f);
@@ -208,6 +208,15 @@ void bgv_keyshare(params::poly_q s[], size_t shares, params::poly_q & sk) {
         t = t - s[i];  // Subtract the share from the total.
     }
     s[0] = t;  // The first share is the remaining value.
+}
+
+void ntru_keyshare() {
+    // Exactly the same as BGV
+    // TODO
+}
+
+void ntru_encrypt() {
+    // TODO
 }
 
 // Function to encrypt a message using the BGV encryption scheme.
@@ -253,6 +262,15 @@ void bgv_add(bgvenc_t & c, bgvenc_t & d, bgvenc_t & e) {
     c.v = d.v + e.v;  // Add the second components.
 }
 
+void ntru_add() {
+    // TODO
+    // c + c'
+}
+
+void ntru_decrypt() {
+    // TODO
+}
+
 // Function to decrypt a ciphertext using the BGV encryption scheme.
 void bgv_decrypt(params::poly_p & m, bgvenc_t & c, params::poly_q & sk) {
     // Change to ntru
@@ -290,6 +308,10 @@ void bgv_decrypt(params::poly_p & m, bgvenc_t & c, params::poly_q & sk) {
     }
 }
 
+void ntru_distdec() {
+    // TODO
+}
+
 // Function to perform distributed decryption of a ciphertext.
 void bgv_distdec(params::poly_q & tj, bgvenc_t & c, params::poly_q & sj) {
     // Change to ntru
@@ -325,6 +347,10 @@ void bgv_distdec(params::poly_q & tj, bgvenc_t & c, params::poly_q & sj) {
     // Compute the intermediate polynomial for distributed decryption.
     mj = sj * c.u;
     tj = mj + (Ej + Ej + Ej);
+}
+
+void ntru_comb() {
+
 }
 
 // Function to combine the results of distributed decryption.
@@ -439,6 +465,7 @@ static void test() {
 	return;
 }
 
+
 // Function to benchmark the BGV encryption scheme.
 static void bench() {
 	bgvkey_t pk;  // Public key.
@@ -488,11 +515,14 @@ static void bench() {
 
 // Main function to run tests and benchmarks.
 int main(int argc, char *arv[]) {
-	printf("\n** Tests for BGV encryption:\n\n");
-	test();
+	//printf("\n** Tests for BGV encryption:\n\n");
+	//test();
 
-	printf("\n** Benchmarks for BGV encryption:\n\n");
-	bench();
+    printf("\n** Tests for NTRU encryption:\n\n");
+    ntru_test();
+
+	//printf("\n** Benchmarks for BGV encryption:\n\n");
+	//bench();
 
 	return 0;
 }
