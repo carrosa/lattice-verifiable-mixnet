@@ -15,13 +15,16 @@ bdlop: src/bdlop.cpp src/bgv.cpp ${TEST} ${BENCH} ${INCLUDES}
 bgv: src/bgv.cpp ${TEST} ${BENCH} ${INCLUDES}
 	${CPP} ${CFLAGS} -DMAIN src/bgv.cpp ${TEST} ${BENCH} -o bgv ${LIBS}
 
-ntru: src/ntru.cpp ${TEST} ${BENCH} ${INCLUDES}
-	${CPP} ${CFLAGS} -DMAIN src/ntru.cpp ${TEST} ${BENCH} -o ntru ${LIBS}
-
 shuffle: src/shuffle.cpp src/bdlop.cpp ${TEST} ${BENCH} ${INCLUDES}
 	${CPP} ${CFLAGS} -c src/sample_z_small.c -o sample_z_small.o
 	${CPP} ${CFLAGS} -c src/bdlop.cpp -o bdlop.o
 	${CPP} ${CFLAGS} -DMAIN src/shuffle.cpp sample_z_small.o bdlop.o ${TEST} ${BENCH} ${BLAKE3} -o shuffle ${LIBS}
+
+bgv2: src/bgv.cpp src/bdlop.cpp ${TEST} ${BENCH} ${INCLUDES}
+	${CPP} ${CFLAGS} -c src/sample_z_small.c -o sample_z_small.o
+	${CPP} ${CFLAGS} -c src/bdlop.cpp -o bdlop.o
+	${CPP} ${CFLAGS} -DMAIN src/bgv.cpp sample_z_small.o bdlop.o ${TEST} ${BENCH} ${BLAKE3} -o bgv2 ${LIBS}
+
 
 pismall: src/bdlop.cpp src/pismall.cpp ${TEST} ${BENCH} ${INCLUDES}
 	${CPP} ${CFLAGS} -DSIZE=3 -c src/bdlop.cpp -o bdlop.o
