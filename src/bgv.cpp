@@ -195,6 +195,7 @@ void ntru_keygen(params::poly_q &pk, params::poly_q &sk) {
     array<mpz_t, params::poly_q::degree> coeffs_g;
     for (size_t k = 0; k < params::poly_q::degree; k++) {
         int64_t coeff_f = sample_z(0.0, SIGMA_NTRU);
+        // Can we just resample coeff_f until we get it so that the Rp mod condition is satisfied?
         int64_t coeff_g = sample_z(0.0, SIGMA_NTRU);
         mpz_set_si(coeffs_f[k], coeff_f);
         mpz_set_si(coeffs_g[k], coeff_g);
