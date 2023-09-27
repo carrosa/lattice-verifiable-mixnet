@@ -20,10 +20,10 @@ shuffle: src/shuffle.cpp src/bdlop.cpp ${TEST} ${BENCH} ${INCLUDES}
 	${CPP} ${CFLAGS} -c src/bdlop.cpp -o bdlop.o
 	${CPP} ${CFLAGS} -DMAIN src/shuffle.cpp sample_z_small.o bdlop.o ${TEST} ${BENCH} ${BLAKE3} -o shuffle ${LIBS}
 
-bgv2: src/bgv.cpp src/bdlop.cpp ${TEST} ${BENCH} ${INCLUDES}
+ntru: src/bgv.cpp src/bdlop.cpp ${TEST} ${BENCH} ${INCLUDES}
 	${CPP} ${CFLAGS} -c src/sample_z_small.c -o sample_z_small.o
 	${CPP} ${CFLAGS} -c src/bdlop.cpp -o bdlop.o
-	${CPP} ${CFLAGS} -DMAIN src/bgv.cpp sample_z_small.o bdlop.o ${TEST} ${BENCH} ${BLAKE3} -o bgv2 ${LIBS}
+	${CPP} ${CFLAGS} -DMAIN src/bgv.cpp sample_z_small.o bdlop.o ${TEST} ${BENCH} ${BLAKE3} -o ntru ${LIBS}
 
 
 pismall: src/bdlop.cpp src/pismall.cpp ${TEST} ${BENCH} ${INCLUDES}

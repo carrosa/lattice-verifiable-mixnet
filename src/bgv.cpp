@@ -132,58 +132,58 @@ void bgv_keygen(bgvkey_t &pk, params::poly_q &sk) {
  * @param inv Output parameter to store the computed inverse polynomial.
  * @param p Input polynomial for which the inverse is to be computed.
  */
-void poly_inverse(params::poly_q & inv, params::poly_q p) {
-   // Declare an array to store coefficients of the polynomial
-   std::array < mpz_t, params::poly_q::degree > coeffs;
-   // Declare a variable to store the modulus of the field
-   fmpz_t q;
-   // Declare variables to store the polynomial and the irreducible polynomial
-   fmpz_mod_poly_t poly, irred;
-   // Declare a context variable for modular arithmetic operations
-   fmpz_mod_ctx_t ctx_q;
+void poly_inverse(params::poly_q &inv, params::poly_q p) {
+    // Declare an array to store coefficients of the polynomial
+    std::array<mpz_t, params::poly_q::degree> coeffs;
+    // Declare a variable to store the modulus of the field
+    fmpz_t q;
+    // Declare variables to store the polynomial and the irreducible polynomial
+    fmpz_mod_poly_t poly, irred;
+    // Declare a context variable for modular arithmetic operations
+    fmpz_mod_ctx_t ctx_q;
 
-   // Initialize the modulus variable
-   fmpz_init(q);
-   // Initialize the coefficients array with the appropriate bit size
-   for (size_t i = 0; i < params::poly_q::degree; i++) {
-       mpz_init2(coeffs[i], (params::poly_q::bits_in_moduli_product() << 2));
-   }
+    // Initialize the modulus variable
+    fmpz_init(q);
+    // Initialize the coefficients array with the appropriate bit size
+    for (size_t i = 0; i < params::poly_q::degree; i++) {
+        mpz_init2(coeffs[i], (params::poly_q::bits_in_moduli_product() << 2));
+    }
 
-   // Set the modulus value to the product of moduli for the polynomial
-   fmpz_set_mpz(q, params::poly_q::moduli_product());
-   // Initialize the context for modular arithmetic with the modulus
-   fmpz_mod_ctx_init(ctx_q, q);
-   // Initialize the polynomial and irreducible polynomial variables in the context
-   fmpz_mod_poly_init(poly, ctx_q);
-   fmpz_mod_poly_init(irred, ctx_q);
+    // Set the modulus value to the product of moduli for the polynomial
+    fmpz_set_mpz(q, params::poly_q::moduli_product());
+    // Initialize the context for modular arithmetic with the modulus
+    fmpz_mod_ctx_init(ctx_q, q);
+    // Initialize the polynomial and irreducible polynomial variables in the context
+    fmpz_mod_poly_init(poly, ctx_q);
+    fmpz_mod_poly_init(irred, ctx_q);
 
-   // Convert the polynomial to its coefficient representation
-   p.poly2mpz(coeffs);
-   // Define the irreducible polynomial for the field
-   fmpz_mod_poly_set_coeff_ui(irred, params::poly_q::degree, 1, ctx_q);
-   fmpz_mod_poly_set_coeff_ui(irred, 0, 1, ctx_q);
+    // Convert the polynomial to its coefficient representation
+    p.poly2mpz(coeffs);
+    // Define the irreducible polynomial for the field
+    fmpz_mod_poly_set_coeff_ui(irred, params::poly_q::degree, 1, ctx_q);
+    fmpz_mod_poly_set_coeff_ui(irred, 0, 1, ctx_q);
 
-   // Set the polynomial coefficients from the array
-   for (size_t i = 0; i < params::poly_q::degree; i++) {
-       fmpz_mod_poly_set_coeff_mpz(poly, i, coeffs[i], ctx_q);
-   }
-   // Compute the multiplicative inverse of the polynomial modulo the irreducible polynomial
-   fmpz_mod_poly_invmod(poly, poly, irred, ctx_q);
+    // Set the polynomial coefficients from the array
+    for (size_t i = 0; i < params::poly_q::degree; i++) {
+        fmpz_mod_poly_set_coeff_mpz(poly, i, coeffs[i], ctx_q);
+    }
+    // Compute the multiplicative inverse of the polynomial modulo the irreducible polynomial
+    fmpz_mod_poly_invmod(poly, poly, irred, ctx_q);
 
-   // Retrieve the coefficients of the inverse polynomial
-   for (size_t i = 0; i < params::poly_q::degree; i++) {
-       fmpz_mod_poly_get_coeff_mpz(coeffs[i], poly, i, ctx_q);
-   }
+    // Retrieve the coefficients of the inverse polynomial
+    for (size_t i = 0; i < params::poly_q::degree; i++) {
+        fmpz_mod_poly_get_coeff_mpz(coeffs[i], poly, i, ctx_q);
+    }
 
-   // Convert the coefficient representation back to the polynomial form
-   inv.mpz2poly(coeffs);
+    // Convert the coefficient representation back to the polynomial form
+    inv.mpz2poly(coeffs);
 
-   // Clear the memory allocated for the modulus
-   fmpz_clear(q);
-   // Clear the memory allocated for the coefficients array
-   for (size_t i = 0; i < params::poly_q::degree; i++) {
-       mpz_clear(coeffs[i]);
-   }
+    // Clear the memory allocated for the modulus
+    fmpz_clear(q);
+    // Clear the memory allocated for the coefficients array
+    for (size_t i = 0; i < params::poly_q::degree; i++) {
+        mpz_clear(coeffs[i]);
+    }
 }
 
 // Function to genereate a key pair for the NTRU encryption scheme
@@ -194,12 +194,16 @@ void ntru_keygen(params::poly_q &pk, params::poly_q &sk) {
     array<mpz_t, params::poly_q::degree> coeffs_f;
     array<mpz_t, params::poly_q::degree> coeffs_g;
     for (size_t k = 0; k < params::poly_q::degree; k++) {
-        int64_t coeff_f = sample_z(0.0, SIGMA_NTRU);
-        // Can we just resample coeff_f until we get it so that the Rp mod condition is satisfied?
+        int64_t coeff_f;
+        unsigned long int f_mod_p;
+        do {
+            coeff_f = sample_z(0.0, SIGMA_NTRU);
+        } while ((k == 0 && coeff_f % PRIMEP != 1) || (k >= 1 && coeff_f % PRIMEP != 0));
         int64_t coeff_g = sample_z(0.0, SIGMA_NTRU);
         mpz_set_si(coeffs_f[k], coeff_f);
         mpz_set_si(coeffs_g[k], coeff_g);
     }
+    // Multiply
     f.mpz2poly(coeffs_f);
     g.mpz2poly(coeffs_g);
     poly_inverse(f, f);
