@@ -254,6 +254,7 @@ void ntru_encrypt(params::poly_q &c, params::poly_q &pk, params::poly_p &m) {
     params::poly_q m_q;
     array<mpz_t, params::poly_p::degree> coeffs_m = m.poly2mpz();
     m_q.mpz2poly(coeffs_m);
+    m_q.ntt_pow_phi();
 
     // pk is already in NTT domain, so we don't have to transform that
     c = m_q;
