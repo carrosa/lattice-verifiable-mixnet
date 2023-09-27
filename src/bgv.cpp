@@ -307,9 +307,8 @@ void bgv_add(bgvenc_t &c, bgvenc_t &d, bgvenc_t &e) {
     c.v = d.v + e.v;  // Add the second components.
 }
 
-void ntru_add() {
-    // TODO
-    // c + c'
+void ntru_add(params::poly_q &c, params::poly_q &c1, params::poly_q &c2) {
+    c = c1 + c2;
 }
 
 void ntru_decrypt() {
