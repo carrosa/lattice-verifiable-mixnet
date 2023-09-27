@@ -241,8 +241,25 @@ void ntru_keyshare(params::poly_q s[], size_t shares, params::poly_q &sk)  {
     s[0] = t;
 }
 
-void ntru_encrypt() {
-    // TODO
+void ntru_encrypt(params::poly_q &c, params::poly_q &pk, params::poly_p &m) {
+    // Initialize s, e
+    params::poly_q s = nfl::ZO_dist();
+    params::poly_q e = nfl::ZO_dist();
+
+    // NTT transformations
+    s.ntt_pow_phi();
+    e.ntt_pow_phi();
+
+    // Transform m to be in Rq
+    params::poly_q m_q;
+    array<mpz_t, params::poly_p::degree> coeffs_m = m.poly2mpz();
+    m_q.mpz2poly(coeffs_m);
+
+    // pk is already in NTT domain, so we don't have to transform that
+    c = m_q;
+    for (size_t i = 0; i < PRIMEP; i++) {
+        c = c + pk * s + e;
+    }
 }
 
 // Function to encrypt a message using the BGV encryption scheme.
