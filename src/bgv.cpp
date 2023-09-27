@@ -229,9 +229,16 @@ void bgv_keyshare(params::poly_q s[], size_t shares, params::poly_q &sk) {
     s[0] = t;  // The first share is the remaining value.
 }
 
-void ntru_keyshare() {
+void ntru_keyshare(params::poly_q s[], size_t shares, params::poly_q &sk)  {
     // Exactly the same as BGV
     // TODO
+    params::poly_q t = sk;
+    for (size_t i = 1; i < shares; i++) {
+        s[i] = nfl::uniform();
+        s[i].ntt_pow_phi();
+        t = t-s[i];
+    }
+    s[0] = t;
 }
 
 void ntru_encrypt() {
