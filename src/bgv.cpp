@@ -55,6 +55,29 @@ void ghl_sample_message(params::poly_q &m) {
     }
 }
 
+void ntru_sample_message(params::poly_p &m) {
+    // Same as BGV, but we are going to use different params so created a specific one.
+    std::array<mpz_t, DEGREE> coeffs;
+    uint64_t buf;
+    size_t bits_in_moduli_product = params::poly_p ::bits_in_moduli_product();
+    for (size_t i = 0; i < params::poly_p::degree; i++) {
+        mpz_init2(coeffs[i], bits_in_moduli_product << 2);
+    }
+    for (size_t j = 0; j < params::poly_p::degree; j += 32) {
+        ssize_t grret = getrandom(&buf, sizeof(buf), 0);
+        if (grret == -1) {
+            throw "Could not generate random seed. Check if something is wrong with the system prng.";
+        }
+        for (size_t k = 0; k < 64; k += 2) {
+            mpz_set_ui(coeffs[j+k/2], (buf >> k) % PRIMEP);
+        }
+    }
+    m.mpz2poly(coeffs);
+    for (size_t i = 0; i < params::poly_p::degree; i++) {
+        mpz_clear(coeffs[i]);
+    }
+}
+
 // Function to sample a message for the BGV encryption scheme.
 void bgv_sample_message(params::poly_p &m) {
     // Similar to ghl_sample_message but for BGV scheme.
@@ -195,7 +218,6 @@ void ntru_keygen(params::poly_q &pk, params::poly_q &sk) {
     array<mpz_t, params::poly_q::degree> coeffs_g;
     for (size_t k = 0; k < params::poly_q::degree; k++) {
         int64_t coeff_f;
-        unsigned long int f_mod_p;
         do {
             coeff_f = sample_z(0.0, SIGMA_NTRU);
         } while ((k == 0 && coeff_f % PRIMEP != 1) || (k >= 1 && coeff_f % PRIMEP != 0));
@@ -311,8 +333,10 @@ void ntru_add(params::poly_q &c, params::poly_q &c1, params::poly_q &c2) {
     c = c1 + c2;
 }
 
-void ntru_decrypt() {
+void ntru_decrypt(params::poly_p &m, params::poly_q &c, params::poly_q &sk) {
     // TODO
+    std::array<mpz_t , DEGREE> coeffs;
+    params::poly_q t = sk * c;
 }
 
 // Function to decrypt a ciphertext using the BGV encryption scheme.
@@ -507,6 +531,25 @@ static void ntru_test() {
     params::poly_q c1, c2;
 
     ntru_keygen(pk, sk);
+    ntru_sample_message(m);
+
+    // Test that NTRU encryption is consistent.
+    TEST_BEGIN("NTRU encryption is consistent") {
+        ntru_encrypt(c1, pk, m);  // Encrypt the message.
+        //ntru_decrypt(_m, c1, sk);  // Decrypt the ciphertext.
+        //TEST_ASSERT(m - _m == 0, end);  // Check that the decrypted message matches the original.
+
+        //ntru_sample_message(m);  // Sample another message.
+        //ntru_decrypt(_m, c1, sk);  // Decrypt the previous ciphertext.
+        //TEST_ASSERT(m - _m != 0, end);  // Check that the decrypted message does not match the new message.
+
+        //ntru_encrypt(c1, pk, m);  // Encrypt the new message.
+        //ntru_keygen(pk, sk);  // Generate a new key pair.
+        //ntru_decrypt(_m, c1, sk);  // Decrypt the ciphertext with the new secret key.
+        //TEST_ASSERT(m - _m != 0, end);  // Check that the decryption is not successful with the wrong key.
+    } TEST_END;
+    end:
+        return;
 }
 
 // Function to benchmark the BGV encryption scheme.
