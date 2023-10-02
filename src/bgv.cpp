@@ -59,7 +59,7 @@ void ntru_sample_message(params::poly_p &m) {
     // Same as BGV, but we are going to use different params so created a specific one.
     std::array<mpz_t, DEGREE> coeffs;
     uint64_t buf;
-    size_t bits_in_moduli_product = params::poly_p ::bits_in_moduli_product();
+    size_t bits_in_moduli_product = params::poly_p::bits_in_moduli_product();
     for (size_t i = 0; i < params::poly_p::degree; i++) {
         mpz_init2(coeffs[i], bits_in_moduli_product << 2);
     }
@@ -69,7 +69,7 @@ void ntru_sample_message(params::poly_p &m) {
             throw "Could not generate random seed. Check if something is wrong with the system prng.";
         }
         for (size_t k = 0; k < 64; k += 2) {
-            mpz_set_ui(coeffs[j+k/2], (buf >> k) % PRIMEP);
+            mpz_set_ui(coeffs[j + k / 2], (buf >> k) % PRIMEP);
         }
     }
     m.mpz2poly(coeffs);
@@ -251,14 +251,14 @@ void bgv_keyshare(params::poly_q s[], size_t shares, params::poly_q &sk) {
     s[0] = t;  // The first share is the remaining value.
 }
 
-void ntru_keyshare(params::poly_q s[], size_t shares, params::poly_q &sk)  {
+void ntru_keyshare(params::poly_q s[], size_t shares, params::poly_q &sk) {
     // Exactly the same as BGV
     // TODO
     params::poly_q t = sk;
     for (size_t i = 1; i < shares; i++) {
         s[i] = nfl::uniform();
         s[i].ntt_pow_phi();
-        t = t-s[i];
+        t = t - s[i];
     }
     s[0] = t;
 }
@@ -267,21 +267,34 @@ void ntru_encrypt(params::poly_q &c, params::poly_q &pk, params::poly_p &m) {
     // Initialize s, e
     params::poly_q s = nfl::ZO_dist();
     params::poly_q e = nfl::ZO_dist();
+    params::poly_q m_;
+
+    std::array<mpz_t, DEGREE> coeffs;
+    for (int i = 0; i < params::poly_q::degree; i++) {
+        mpz_init2(coeffs[i], params::poly_q::bits_in_moduli_product() << 2);
+    }
+    m.poly2mpz(coeffs);
+    m_.mpz2poly(coeffs);
+    m_.ntt_pow_phi();
 
     // NTT transformations
     s.ntt_pow_phi();
     e.ntt_pow_phi();
 
     // Transform m to be in Rq
-    params::poly_q m_q;
+    /*params::poly_q m_q;
     array<mpz_t, params::poly_p::degree> coeffs_m = m.poly2mpz();
     m_q.mpz2poly(coeffs_m);
-    m_q.ntt_pow_phi();
+    m_q.ntt_pow_phi();*/
 
     // pk is already in NTT domain, so we don't have to transform that
-    c = m_q;
+    //c = m_q;
+    c = m_;
     for (size_t i = 0; i < PRIMEP; i++) {
         c = c + pk * s + e;
+    }
+    for (int i = 0; i < params::poly_q::degree; i++) {
+        mpz_clear(coeffs[i]);
     }
 }
 
@@ -335,8 +348,32 @@ void ntru_add(params::poly_q &c, params::poly_q &c1, params::poly_q &c2) {
 
 void ntru_decrypt(params::poly_p &m, params::poly_q &c, params::poly_q &sk) {
     // TODO
-    std::array<mpz_t , DEGREE> coeffs;
+    std::array<mpz_t, DEGREE> coeffs;
     params::poly_q t = sk * c;
+    mpz_t qDivBy2;
+
+    mpz_init(qDivBy2);
+    for (size_t i = 0; i < params::poly_q::degree; i++) {
+        mpz_init2(coeffs[i], params::poly_q::bits_in_moduli_product() << 2);
+    }
+
+    mpz_fdiv_q_2exp(qDivBy2, params::poly_q::moduli_product(), 1);
+    t.invntt_pow_invphi();
+    t.poly2mpz(coeffs);
+    for (size_t i = 0; i < params::poly_q::degree; i++) {
+        util::center(
+                coeffs[i],
+                coeffs[i],
+                params::poly_q::moduli_product(),
+                qDivBy2
+        );
+        mpz_mod_ui(coeffs[i], coeffs[i], PRIMEP);
+    }
+    m.mpz2poly(coeffs);
+    mpz_clear(qDivBy2);
+    for (size_t i = 0; i < params::poly_q::degree; i++) {
+        mpz_clear(coeffs[i]);
+    }
 }
 
 // Function to decrypt a ciphertext using the BGV encryption scheme.
@@ -526,6 +563,14 @@ static void test() {
 }
 
 static void ntru_test() {
+    bgvkey_t pk_bgv;
+    params::poly_q sk_bgv;
+    bgvenc_t c1_bgv;
+    params::poly_p m_bgv, _m_bgv;
+
+    bgv_keygen(pk_bgv, sk_bgv);
+    bgv_sample_message(m_bgv);
+
     params::poly_q sk, pk;
     params::poly_p m, _m;
     params::poly_q c1, c2;
@@ -533,11 +578,16 @@ static void ntru_test() {
     ntru_keygen(pk, sk);
     ntru_sample_message(m);
 
+    TEST_BEGIN("BGV encryption is consistent") {
+        bgv_encrypt(c1_bgv, pk_bgv, m_bgv);
+        bgv_decrypt(_m_bgv, c1_bgv, sk_bgv);
+        TEST_ASSERT(m_bgv - _m_bgv == 0, end);
+    } TEST_END;
     // Test that NTRU encryption is consistent.
     TEST_BEGIN("NTRU encryption is consistent") {
         ntru_encrypt(c1, pk, m);  // Encrypt the message.
-        //ntru_decrypt(_m, c1, sk);  // Decrypt the ciphertext.
-        //TEST_ASSERT(m - _m == 0, end);  // Check that the decrypted message matches the original.
+        ntru_decrypt(_m, c1, sk);  // Decrypt the ciphertext.
+        TEST_ASSERT(m - _m == 0, end);  // Check that the decrypted message matches the original.
 
         //ntru_sample_message(m);  // Sample another message.
         //ntru_decrypt(_m, c1, sk);  // Decrypt the previous ciphertext.
