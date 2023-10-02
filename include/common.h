@@ -35,7 +35,7 @@ using namespace std;
 /* Small modulus. */
 #define PRIMEP      2
 /* Degree of the irreducible polynomial. */
-#define DEGREE      4096 //2048
+#define DEGREE      2048//4096 //2048
 /* Sigma for the commitment gaussian distribution. */
 #define SIGMA_C     (1u << 12)
 /* Sigma for the boundness proof. */
@@ -43,7 +43,8 @@ using namespace std;
 /* Sigma for the boundness proof. */
 #define SIGMA_B2     (1e66l)
 /* Sigma for NTRU gaussian distribution */
-#define SIGMA_NTRU (std::sqrt(2.0l / 3.0l))
+//#define SIGMA_NTRU (std::sqrt(2.0l / 3.0l))
+#define SIGMA_NTRU 13
 /* Norm bound for boundness proof. */
 #define BOUND_B     "6678434726570384949248"
 /* Parties that run the distributed decryption protocol. */

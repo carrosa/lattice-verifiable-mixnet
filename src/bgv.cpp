@@ -209,6 +209,34 @@ void poly_inverse(params::poly_q &inv, params::poly_q p) {
     }
 }
 
+bool ntru_test_norm(params::poly_q r, uint64_t sigma_sqr, uint64_t t) {
+    std::cout << "\nSigma: " << sigma_sqr << "\n";
+    array<mpz_t, params::poly_q::degree> coeffs;
+    mpz_t norm, qDivBy2, tmp;
+    mpz_inits(norm, qDivBy2, tmp, nullptr);
+    for (size_t i = 0; i < params::poly_q::degree; i++) {
+        mpz_init2(coeffs[i], params::poly_q::bits_in_moduli_product() << 2);
+    }
+    r.poly2mpz(coeffs);
+    mpz_fdiv_q_2exp(qDivBy2, params::poly_q::moduli_product(), 1);
+    mpz_set_ui(norm, 0);
+    for (size_t i = 0; i < params::poly_q::degree; i++) {
+        util::center(coeffs[i], coeffs[i], params::poly_q::moduli_product(), qDivBy2);
+        mpz_mul(tmp, coeffs[i], coeffs[i]);
+        mpz_add(norm, norm, tmp);
+    }
+    gmp_printf("Norm: %Zd\n", norm);
+    uint64_t bound = t * t * sigma_sqr * params::poly_q::degree;
+    int result = mpz_cmp_ui(norm, bound) < 0;
+    mpz_clears(norm, qDivBy2, tmp, nullptr);
+    for (size_t i = 0; i < params::poly_q::degree; i++) {
+        mpz_clear(coeffs[i]);
+    }
+    std::cout << "Bound: " << bound << "\n";
+    std::cout << "Res: " << result << "\n";
+    return result;
+}
+
 // Function to genereate a key pair for the NTRU encryption scheme
 void ntru_keygen(params::poly_q &pk, params::poly_q &sk) {
     // Sample f and g
@@ -216,18 +244,23 @@ void ntru_keygen(params::poly_q &pk, params::poly_q &sk) {
     params::poly_q g;
     array<mpz_t, params::poly_q::degree> coeffs_f;
     array<mpz_t, params::poly_q::degree> coeffs_g;
-    for (size_t k = 0; k < params::poly_q::degree; k++) {
-        int64_t coeff_f;
-        do {
-            coeff_f = sample_z(0.0, SIGMA_NTRU);
-        } while ((k == 0 && coeff_f % PRIMEP != 1) || (k >= 1 && coeff_f % PRIMEP != 0));
-        int64_t coeff_g = sample_z(0.0, SIGMA_NTRU);
-        mpz_set_si(coeffs_f[k], coeff_f);
-        mpz_set_si(coeffs_g[k], coeff_g);
-    }
-    // Multiply
-    f.mpz2poly(coeffs_f);
-    g.mpz2poly(coeffs_g);
+    do {
+        for (size_t k = 0; k < params::poly_q::degree; k++) {
+            int64_t coeff_f;
+            do {
+                coeff_f = sample_z(0.0, SIGMA_NTRU);
+            } while ((k == 0 && coeff_f % PRIMEP != 1) || (k >= 1 && coeff_f % PRIMEP != 0));
+            int64_t coeff_g = sample_z(0.0, SIGMA_NTRU);
+            mpz_set_si(coeffs_f[k], coeff_f);
+            mpz_set_si(coeffs_g[k], coeff_g);
+        }
+        // Multiply
+        f.mpz2poly(coeffs_f);
+        g.mpz2poly(coeffs_g);
+    } while (
+            !ntru_test_norm(f, SIGMA_NTRU*SIGMA_NTRU, 2) ||
+            !ntru_test_norm(g, SIGMA_NTRU*SIGMA_NTRU, 2)
+            );
     poly_inverse(f, f);
 
     f.ntt_pow_phi();
@@ -289,10 +322,10 @@ void ntru_encrypt(params::poly_q &c, params::poly_q &pk, params::poly_p &m) {
 
     // pk is already in NTT domain, so we don't have to transform that
     //c = m_q;
-    c = m_;
-    for (size_t i = 0; i < PRIMEP; i++) {
+    /*for (size_t i = 0; i < PRIMEP; i++) {
         c = c + pk * s + e;
-    }
+    }*/
+    c = (pk * s + e) + (pk * s + e) + m_;
     for (int i = 0; i < params::poly_q::degree; i++) {
         mpz_clear(coeffs[i]);
     }
@@ -350,27 +383,28 @@ void ntru_decrypt(params::poly_p &m, params::poly_q &c, params::poly_q &sk) {
     // TODO
     std::array<mpz_t, DEGREE> coeffs;
     params::poly_q t = sk * c;
-    mpz_t qDivBy2;
+    //mpz_t qDivBy2;
 
-    mpz_init(qDivBy2);
+    //mpz_init(qDivBy2);
     for (size_t i = 0; i < params::poly_q::degree; i++) {
         mpz_init2(coeffs[i], params::poly_q::bits_in_moduli_product() << 2);
     }
 
-    mpz_fdiv_q_2exp(qDivBy2, params::poly_q::moduli_product(), 1);
+    //mpz_fdiv_q_2exp(qDivBy2, params::poly_q::moduli_product(), 1);
+
     t.invntt_pow_invphi();
     t.poly2mpz(coeffs);
     for (size_t i = 0; i < params::poly_q::degree; i++) {
-        util::center(
+        /*util::center(
                 coeffs[i],
                 coeffs[i],
                 params::poly_q::moduli_product(),
                 qDivBy2
-        );
+        );*/
         mpz_mod_ui(coeffs[i], coeffs[i], PRIMEP);
     }
     m.mpz2poly(coeffs);
-    mpz_clear(qDivBy2);
+    //mpz_clear(qDivBy2);
     for (size_t i = 0; i < params::poly_q::degree; i++) {
         mpz_clear(coeffs[i]);
     }
@@ -382,7 +416,6 @@ void bgv_decrypt(params::poly_p &m, bgvenc_t &c, params::poly_q &sk) {
     std::array<mpz_t, DEGREE> coeffs;
     params::poly_q t = c.v - sk * c.u;  // Compute the decryption polynomial.
     mpz_t qDivBy2;  // Variable to store half the moduli product.
-
     mpz_init(qDivBy2);
     for (size_t i = 0; i < params::poly_q::degree; i++) {
         mpz_init2(coeffs[i], params::poly_q::bits_in_moduli_product() << 2);
@@ -587,6 +620,8 @@ static void ntru_test() {
     TEST_BEGIN("NTRU encryption is consistent") {
         ntru_encrypt(c1, pk, m);  // Encrypt the message.
         ntru_decrypt(_m, c1, sk);  // Decrypt the ciphertext.
+        std::cout << "\n" << m << "\n";
+        std::cout << "\n" << _m << "\n";
         TEST_ASSERT(m - _m == 0, end);  // Check that the decrypted message matches the original.
 
         //ntru_sample_message(m);  // Sample another message.
