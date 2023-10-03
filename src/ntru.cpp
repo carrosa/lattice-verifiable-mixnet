@@ -15,25 +15,25 @@
 #include "sample_z_small.h"
 
 
-void ntru_sample_message(params::poly_p &m) {
+void ntru_sample_message(ntru_params::poly_p &m) {
     // Same as BGV, but we are going to use different params so created a specific one.
-    std::array<mpz_t, DEGREE> coeffs;
+    std::array<mpz_t, NTRU_DEGREE> coeffs;
     uint64_t buf;
-    size_t bits_in_moduli_product = params::poly_p::bits_in_moduli_product();
-    for (size_t i = 0; i < params::poly_p::degree; i++) {
+    size_t bits_in_moduli_product = ntru_params::poly_p::bits_in_moduli_product();
+    for (size_t i = 0; i < ntru_params::poly_p::degree; i++) {
         mpz_init2(coeffs[i], bits_in_moduli_product << 2);
     }
-    for (size_t j = 0; j < params::poly_p::degree; j += 32) {
+    for (size_t j = 0; j < ntru_params::poly_p::degree; j += 32) {
         ssize_t grret = getrandom(&buf, sizeof(buf), 0);
         if (grret == -1) {
             throw "Could not generate random seed. Check if something is wrong with the system prng.";
         }
         for (size_t k = 0; k < 64; k += 2) {
-            mpz_set_ui(coeffs[j + k / 2], (buf >> k) % PRIMEP);
+            mpz_set_ui(coeffs[j + k / 2], (buf >> k) % NTRU_PRIMEP);
         }
     }
     m.mpz2poly(coeffs);
-    for (size_t i = 0; i < params::poly_p::degree; i++) {
+    for (size_t i = 0; i < ntru_params::poly_p::degree; i++) {
         mpz_clear(coeffs[i]);
     }
 }
@@ -45,9 +45,9 @@ void ntru_sample_message(params::poly_p &m) {
  * @param inv Output parameter to store the computed inverse polynomial.
  * @param p Input polynomial for which the inverse is to be computed.
  */
-void poly_inverse(params::poly_q &inv, params::poly_q p) {
+void poly_inverse(ntru_params::poly_q &inv, ntru_params::poly_q p) {
     // Declare an array to store coefficients of the polynomial
-    std::array<mpz_t, params::poly_q::degree> coeffs;
+    std::array<mpz_t, ntru_params::poly_q::degree> coeffs;
     // Declare a variable to store the modulus of the field
     fmpz_t q;
     // Declare variables to store the polynomial and the irreducible polynomial
@@ -58,12 +58,12 @@ void poly_inverse(params::poly_q &inv, params::poly_q p) {
     // Initialize the modulus variable
     fmpz_init(q);
     // Initialize the coefficients array with the appropriate bit size
-    for (size_t i = 0; i < params::poly_q::degree; i++) {
-        mpz_init2(coeffs[i], (params::poly_q::bits_in_moduli_product() << 2));
+    for (size_t i = 0; i < ntru_params::poly_q::degree; i++) {
+        mpz_init2(coeffs[i], (ntru_params::poly_q::bits_in_moduli_product() << 2));
     }
 
     // Set the modulus value to the product of moduli for the polynomial
-    fmpz_set_mpz(q, params::poly_q::moduli_product());
+    fmpz_set_mpz(q, ntru_params::poly_q::moduli_product());
     // Initialize the context for modular arithmetic with the modulus
     fmpz_mod_ctx_init(ctx_q, q);
     // Initialize the polynomial and irreducible polynomial variables in the context
@@ -73,18 +73,18 @@ void poly_inverse(params::poly_q &inv, params::poly_q p) {
     // Convert the polynomial to its coefficient representation
     p.poly2mpz(coeffs);
     // Define the irreducible polynomial for the field
-    fmpz_mod_poly_set_coeff_ui(irred, params::poly_q::degree, 1, ctx_q);
+    fmpz_mod_poly_set_coeff_ui(irred, ntru_params::poly_q::degree, 1, ctx_q);
     fmpz_mod_poly_set_coeff_ui(irred, 0, 1, ctx_q);
 
     // Set the polynomial coefficients from the array
-    for (size_t i = 0; i < params::poly_q::degree; i++) {
+    for (size_t i = 0; i < ntru_params::poly_q::degree; i++) {
         fmpz_mod_poly_set_coeff_mpz(poly, i, coeffs[i], ctx_q);
     }
     // Compute the multiplicative inverse of the polynomial modulo the irreducible polynomial
     fmpz_mod_poly_invmod(poly, poly, irred, ctx_q);
 
     // Retrieve the coefficients of the inverse polynomial
-    for (size_t i = 0; i < params::poly_q::degree; i++) {
+    for (size_t i = 0; i < ntru_params::poly_q::degree; i++) {
         fmpz_mod_poly_get_coeff_mpz(coeffs[i], poly, i, ctx_q);
     }
 
@@ -94,53 +94,53 @@ void poly_inverse(params::poly_q &inv, params::poly_q p) {
     // Clear the memory allocated for the modulus
     fmpz_clear(q);
     // Clear the memory allocated for the coefficients array
-    for (size_t i = 0; i < params::poly_q::degree; i++) {
+    for (size_t i = 0; i < ntru_params::poly_q::degree; i++) {
         mpz_clear(coeffs[i]);
     }
 }
 
 [[maybe_unused]]
-bool ntru_test_norm(params::poly_q r, uint64_t sigma_sqr, uint64_t t) {
+bool ntru_test_norm(ntru_params::poly_q r, uint64_t sigma_sqr, uint64_t t) {
     std::cout << "\nSigma^2: " << sigma_sqr << "\n";
-    array<mpz_t, params::poly_q::degree> coeffs;
+    array<mpz_t, ntru_params::poly_q::degree> coeffs;
     mpz_t norm, qDivBy2, tmp;
     mpz_inits(norm, qDivBy2, tmp, nullptr);
-    for (size_t i = 0; i < params::poly_q::degree; i++) {
-        mpz_init2(coeffs[i], params::poly_q::bits_in_moduli_product() << 2);
+    for (size_t i = 0; i < ntru_params::poly_q::degree; i++) {
+        mpz_init2(coeffs[i], ntru_params::poly_q::bits_in_moduli_product() << 2);
     }
     r.poly2mpz(coeffs);
-    mpz_fdiv_q_2exp(qDivBy2, params::poly_q::moduli_product(), 1);
+    mpz_fdiv_q_2exp(qDivBy2, ntru_params::poly_q::moduli_product(), 1);
     mpz_set_ui(norm, 0);
-    for (size_t i = 0; i < params::poly_q::degree; i++) {
-        util::center(coeffs[i], coeffs[i], params::poly_q::moduli_product(), qDivBy2);
+    for (size_t i = 0; i < ntru_params::poly_q::degree; i++) {
+        util::center(coeffs[i], coeffs[i], ntru_params::poly_q::moduli_product(), qDivBy2);
         mpz_mul(tmp, coeffs[i], coeffs[i]);
         mpz_add(norm, norm, tmp);
     }
-    uint64_t bound = t * t * sigma_sqr * params::poly_q::degree;
+    uint64_t bound = t * t * sigma_sqr * ntru_params::poly_q::degree;
     int result = mpz_cmp_ui(norm, bound) < 0;
     mpz_clears(norm, qDivBy2, tmp, nullptr);
-    for (size_t i = 0; i < params::poly_q::degree; i++) {
+    for (size_t i = 0; i < ntru_params::poly_q::degree; i++) {
         mpz_clear(coeffs[i]);
     }
     return result;
 }
 
-void ntru_keygen(params::poly_q &pk, params::poly_q &sk) {
-    params::poly_q f, g, f_inv;
-    array<mpz_t, params::poly_q::degree> coeffs_f, coeffs_g, coeffs;
+void ntru_keygen(ntru_params::poly_q &pk, ntru_params::poly_q &sk) {
+    ntru_params::poly_q f, g, f_inv;
+    array<mpz_t, ntru_params::poly_q::degree> coeffs_f, coeffs_g, coeffs;
 
-    for (size_t i = 0; i < params::poly_q::degree; i++) {
-        mpz_init2(coeffs_f[i], params::poly_q::bits_in_moduli_product() << 2);
-        mpz_init2(coeffs_g[i], params::poly_q::bits_in_moduli_product() << 2);
-        mpz_init2(coeffs[i], params::poly_q::bits_in_moduli_product() << 2);
+    for (size_t i = 0; i < ntru_params::poly_q::degree; i++) {
+        mpz_init2(coeffs_f[i], ntru_params::poly_q::bits_in_moduli_product() << 2);
+        mpz_init2(coeffs_g[i], ntru_params::poly_q::bits_in_moduli_product() << 2);
+        mpz_init2(coeffs[i], ntru_params::poly_q::bits_in_moduli_product() << 2);
     }
 
-    for (size_t k = 0; k < params::poly_q::degree; k++) {
+    for (size_t k = 0; k < ntru_params::poly_q::degree; k++) {
         int64_t coeff_f;
         do {
-            coeff_f = sample_z(0.0, SIGMA_NTRU);
-        } while ((k == 0 && coeff_f % PRIMEP != 1) || (k >= 1 && coeff_f % PRIMEP != 0));
-        int64_t coeff_g = sample_z(0.0, SIGMA_NTRU);
+            coeff_f = sample_z(0.0, NTRU_SIGMA);
+        } while ((k == 0 && coeff_f % NTRU_PRIMEP != 1) || (k >= 1 && coeff_f % NTRU_PRIMEP != 0));
+        int64_t coeff_g = sample_z(0.0, NTRU_SIGMA);
         mpz_set_si(coeffs_f[k], coeff_f);
         mpz_set_si(coeffs_g[k], coeff_g);
     }
@@ -156,17 +156,17 @@ void ntru_keygen(params::poly_q &pk, params::poly_q &sk) {
     pk = g * f_inv;
     sk = f;
 
-    for (size_t i = 0; i < params::poly_q::degree; i++) {
+    for (size_t i = 0; i < ntru_params::poly_q::degree; i++) {
         mpz_clear(coeffs_f[i]);
         mpz_clear(coeffs_g[i]);
         mpz_clear(coeffs[i]);
     }
 }
 
-void ntru_keyshare(params::poly_q s[], size_t shares, params::poly_q &sk) {
+void ntru_keyshare(ntru_params::poly_q s[], size_t shares, ntru_params::poly_q &sk) {
     // Exactly the same as BGV
     // TODO
-    params::poly_q t = sk;
+    ntru_params::poly_q t = sk;
     for (size_t i = 1; i < shares; i++) {
         s[i] = nfl::uniform();
         s[i].ntt_pow_phi();
@@ -175,14 +175,14 @@ void ntru_keyshare(params::poly_q s[], size_t shares, params::poly_q &sk) {
     s[0] = t;
 }
 
-void ntru_encrypt(params::poly_q &c, params::poly_q &pk, params::poly_p &m) {
-    params::poly_q s = nfl::ZO_dist();
-    params::poly_q e = nfl::ZO_dist();
-    params::poly_q m_;
-    std::array<mpz_t, DEGREE> coeffs;
+void ntru_encrypt(ntru_params::poly_q &c, ntru_params::poly_q &pk, ntru_params::poly_p &m) {
+    ntru_params::poly_q s = nfl::ZO_dist();
+    ntru_params::poly_q e = nfl::ZO_dist();
+    ntru_params::poly_q m_;
+    std::array<mpz_t, NTRU_DEGREE> coeffs;
 
-    for (int i = 0; i < params::poly_q::degree; i++) {
-        mpz_init2(coeffs[i], params::poly_q::bits_in_moduli_product() << 2);
+    for (int i = 0; i < ntru_params::poly_q::degree; i++) {
+        mpz_init2(coeffs[i], ntru_params::poly_q::bits_in_moduli_product() << 2);
     }
 
     s.ntt_pow_phi();
@@ -195,36 +195,36 @@ void ntru_encrypt(params::poly_q &c, params::poly_q &pk, params::poly_p &m) {
 
     c = (pk * s + e) + (pk * s + e) + m_;
 
-    for (int i = 0; i < params::poly_q::degree; i++) {
+    for (int i = 0; i < ntru_params::poly_q::degree; i++) {
         mpz_clear(coeffs[i]);
     }
 }
 
-void ntru_add(params::poly_q &c, params::poly_q &c1, params::poly_q &c2) {
+void ntru_add(ntru_params::poly_q &c, ntru_params::poly_q &c1, ntru_params::poly_q &c2) {
     c = c1 + c2;
 }
 
-void ntru_decrypt(params::poly_p &m, params::poly_q &c, params::poly_q &sk) {
-    std::array<mpz_t, DEGREE> coeffs;
-    params::poly_q t = sk * c;
+void ntru_decrypt(ntru_params::poly_p &m, ntru_params::poly_q &c, ntru_params::poly_q &sk) {
+    std::array<mpz_t, NTRU_DEGREE> coeffs;
+    ntru_params::poly_q t = sk * c;
     mpz_t qDivBy2;
 
     mpz_init(qDivBy2);
-    for (size_t i = 0; i < params::poly_q::degree; i++) {
-        mpz_init2(coeffs[i], params::poly_q::bits_in_moduli_product() << 2);
+    for (size_t i = 0; i < ntru_params::poly_q::degree; i++) {
+        mpz_init2(coeffs[i], ntru_params::poly_q::bits_in_moduli_product() << 2);
     }
 
-    mpz_fdiv_q_2exp(qDivBy2, params::poly_q::moduli_product(), 1);
+    mpz_fdiv_q_2exp(qDivBy2, ntru_params::poly_q::moduli_product(), 1);
     t.invntt_pow_invphi();
     t.poly2mpz(coeffs);
-    for (size_t i = 0; i < params::poly_q::degree; i++) {
-        util::center(coeffs[i], coeffs[i], params::poly_q::moduli_product(), qDivBy2);
-        mpz_mod_ui(coeffs[i], coeffs[i], PRIMEP);
+    for (size_t i = 0; i < ntru_params::poly_q::degree; i++) {
+        util::center(coeffs[i], coeffs[i], ntru_params::poly_q::moduli_product(), qDivBy2);
+        mpz_mod_ui(coeffs[i], coeffs[i], NTRU_PRIMEP);
     }
     m.mpz2poly(coeffs);
 
     mpz_clear(qDivBy2);
-    for (size_t i = 0; i < params::poly_q::degree; i++) {
+    for (size_t i = 0; i < ntru_params::poly_q::degree; i++) {
         mpz_clear(coeffs[i]);
     }
 }
@@ -241,9 +241,9 @@ void ntru_comb() {
 
 static void ntru_test() {
 
-    params::poly_q sk, pk;
-    params::poly_p m, _m;
-    params::poly_q c1, c2;
+    ntru_params::poly_q sk, pk;
+    ntru_params::poly_p m, _m;
+    ntru_params::poly_q c1, c2;
 
     ntru_keygen(pk, sk);
     ntru_sample_message(m);

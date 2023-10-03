@@ -31,24 +31,19 @@ using namespace std;
 #define SIZE        2
 #endif
 /* Large modulus. */
-//#define PRIMEQ      "302231454903657293688833"
-#define PRIMEQ      576460752303439873
+#define PRIMEQ      "302231454903657293688833"
 /* Small modulus. */
 #define PRIMEP      2
 /* Degree of the irreducible polynomial. */
-#define DEGREE      2048//4096 //2048
+#define DEGREE      4096 //2048
 /* Sigma for the commitment gaussian distribution. */
 #define SIGMA_C     (1u << 12)
 /* Sigma for the boundness proof. */
 #define SIGMA_B1     (11585u)
 /* Sigma for the boundness proof. */
 #define SIGMA_B2     (1e66l)
-/* Sigma for NTRU gaussian distribution */
-//#define SIGMA_NTRU (std::sqrt(2.0l / 3.0l))
-#define SIGMA_NTRU 13
 /* Norm bound for boundness proof. */
-//#define BOUND_B     "6678434726570384949248"
-#define BOUND_B     "1"
+#define BOUND_B     "6678434726570384949248"
 /* Parties that run the distributed decryption protocol. */
 #define PARTIES     4
 /* Security level for Distributed Decryption. */
@@ -56,12 +51,25 @@ using namespace std;
 /* Bound for Distributed Decryption = 2^BGVSEC * q/(2 * p * PARTIES). */
 #define BOUND_D     "750837175903336127688539820910095018"
 
+/*
+ * NTRU DEFINEs
+ * */
+#define NTRU_PRIMEQ 576460752303439873
+#define NTRU_PRIMEP 2
+#define NTRU_SIGMA 13
+#define NTRU_DEGREE 2048
+#define NTRU_BOUND_B "1"
+
+
 namespace params {
-//    using poly_p = nfl::poly_from_modulus<uint32_t, DEGREE, 30>;
     using poly_p = nfl::poly_from_modulus<uint32_t, DEGREE, 30>;
-//    using poly_q = nfl::poly_from_modulus<uint64_t, DEGREE, 124>;
     using poly_q = nfl::poly_from_modulus<uint64_t, DEGREE, 62>;
     using poly_big = nfl::poly_from_modulus<uint64_t, 4 * DEGREE, 124>;
+}
+
+namespace ntru_params {
+    using poly_p = nfl::poly_from_modulus<uint32_t, NTRU_DEGREE, 30>;
+    using poly_q = nfl::poly_from_modulus<uint64_t, NTRU_DEGREE, 62>;
 }
 
 /*============================================================================*/
