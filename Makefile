@@ -8,11 +8,11 @@ LIBS = deps/libnfllib_static.a -lgmp -lmpfr -L deps/ -lflint -lquadmath
 
 all: bdlop bgv shuffle pismall pibnd
 
-bdlop: src/bdlop.cpp src/bgv.cpp ${TEST} ${BENCH} ${INCLUDES}
+bdlop: src/bdlop.cpp src/ntru.cpp ${TEST} ${BENCH} ${INCLUDES}
 	${CPP} ${CFLAGS} -c src/bgv.cpp -o bgv.o
 	${CPP} ${CFLAGS} -DMAIN src/bdlop.cpp bgv.o ${TEST} ${BENCH} -o bdlop ${LIBS}
 
-bgv: src/bgv.cpp ${TEST} ${BENCH} ${INCLUDES}
+bgv: src/ntru.cpp ${TEST} ${BENCH} ${INCLUDES}
 	${CPP} ${CFLAGS} -DMAIN src/bgv.cpp ${TEST} ${BENCH} -o bgv ${LIBS}
 
 shuffle: src/shuffle.cpp src/bdlop.cpp ${TEST} ${BENCH} ${INCLUDES}
@@ -20,10 +20,10 @@ shuffle: src/shuffle.cpp src/bdlop.cpp ${TEST} ${BENCH} ${INCLUDES}
 	${CPP} ${CFLAGS} -c src/bdlop.cpp -o bdlop.o
 	${CPP} ${CFLAGS} -DMAIN src/shuffle.cpp sample_z_small.o bdlop.o ${TEST} ${BENCH} ${BLAKE3} -o shuffle ${LIBS}
 
-ntru: src/bgv.cpp src/bdlop.cpp ${TEST} ${BENCH} ${INCLUDES}
+ntru: src/ntru.cpp src/bdlop.cpp ${TEST} ${BENCH} ${INCLUDES}
 	${CPP} ${CFLAGS} -c src/sample_z_small.c -o sample_z_small.o
 	${CPP} ${CFLAGS} -c src/bdlop.cpp -o bdlop.o
-	${CPP} ${CFLAGS} -DMAIN src/bgv.cpp sample_z_small.o bdlop.o ${TEST} ${BENCH} ${BLAKE3} -o ntru ${LIBS}
+	${CPP} ${CFLAGS} -DMAIN src/ntru.cpp sample_z_small.o bdlop.o ${TEST} ${BENCH} ${BLAKE3} -o ntru ${LIBS}
 
 
 pismall: src/bdlop.cpp src/pismall.cpp ${TEST} ${BENCH} ${INCLUDES}
@@ -36,4 +36,4 @@ pibnd: src/pibnd.cpp ${TEST} ${BENCH} ${INCLUDES}
 	${CPP} ${CFLAGS} -DMAIN src/pibnd.cpp sample_z_small.o sample_z_large.o ${TEST} ${BENCH} ${BLAKE3} -o pibnd ${LIBS}
 
 clean:
-	rm *.o bdlop bgv shuffle pismall pibnd
+	rm -f *.o bdlop bgv shuffle pismall pibnd ntru

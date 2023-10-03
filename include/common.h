@@ -31,7 +31,8 @@ using namespace std;
 #define SIZE        2
 #endif
 /* Large modulus. */
-#define PRIMEQ      "302231454903657293688833"
+//#define PRIMEQ      "302231454903657293688833"
+#define PRIMEQ      576460752303439873
 /* Small modulus. */
 #define PRIMEP      2
 /* Degree of the irreducible polynomial. */
@@ -46,7 +47,8 @@ using namespace std;
 //#define SIGMA_NTRU (std::sqrt(2.0l / 3.0l))
 #define SIGMA_NTRU 13
 /* Norm bound for boundness proof. */
-#define BOUND_B     "6678434726570384949248"
+//#define BOUND_B     "6678434726570384949248"
+#define BOUND_B     "1"
 /* Parties that run the distributed decryption protocol. */
 #define PARTIES     4
 /* Security level for Distributed Decryption. */
@@ -55,8 +57,10 @@ using namespace std;
 #define BOUND_D     "750837175903336127688539820910095018"
 
 namespace params {
+//    using poly_p = nfl::poly_from_modulus<uint32_t, DEGREE, 30>;
     using poly_p = nfl::poly_from_modulus<uint32_t, DEGREE, 30>;
-    using poly_q = nfl::poly_from_modulus<uint64_t, DEGREE, 124>;
+//    using poly_q = nfl::poly_from_modulus<uint64_t, DEGREE, 124>;
+    using poly_q = nfl::poly_from_modulus<uint64_t, DEGREE, 62>;
     using poly_big = nfl::poly_from_modulus<uint64_t, 4 * DEGREE, 124>;
 }
 
