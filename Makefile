@@ -6,7 +6,7 @@ BENCH = src/bench.c src/cpucycles.c
 TEST = src/test.c
 LIBS = deps/libnfllib_static.a -lgmp -lmpfr -L deps/ -lflint -lquadmath
 
-all: bdlop bgv shuffle pismall pibnd
+all: bdlop bgv shuffle pismall pibnd ntru
 
 bdlop: src/bdlop.cpp src/ntru.cpp ${TEST} ${BENCH} ${INCLUDES}
 	${CPP} ${CFLAGS} -c src/bgv.cpp -o bgv.o

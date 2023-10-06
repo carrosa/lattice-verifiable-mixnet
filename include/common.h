@@ -22,7 +22,7 @@ using namespace std;
 #define LEVEL       128
 /* The \infty-norm bound of certain elements. */
 #define BETA        1
-/* Width k of the comming matrix. */
+/* Width k of the commitment matrix. */
 #define WIDTH        4
 /* Height of the commitment matrix. */
 #define HEIGHT        1
@@ -63,7 +63,7 @@ using namespace std;
 
 namespace params {
     using poly_p = nfl::poly_from_modulus<uint32_t, DEGREE, 30>;
-    using poly_q = nfl::poly_from_modulus<uint64_t, DEGREE, 62>;
+    using poly_q = nfl::poly_from_modulus<uint64_t, DEGREE, 124>;
     using poly_big = nfl::poly_from_modulus<uint64_t, 4 * DEGREE, 124>;
 }
 

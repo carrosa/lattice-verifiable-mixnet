@@ -8,9 +8,6 @@
 #include <flint/flint.h>
 #include <flint/fmpz_mod_poly.h>
 #include "blake3.h"
-#include "common.h"
-#include "test.h"
-#include "bench.h"
 #include "assert.h"
 #include "sample_z_small.h"
 
