@@ -161,8 +161,6 @@ void ntru_keygen(ntru_params::poly_q &pk, ntru_params::poly_q &sk) {
 }
 
 void ntru_keyshare(ntru_params::poly_q s[], size_t shares, ntru_params::poly_q &sk) {
-    // Exactly the same as BGV
-    // TODO
     ntru_params::poly_q t = sk;
     for (size_t i = 1; i < shares; i++) {
         s[i] = nfl::uniform();
@@ -238,9 +236,8 @@ void ntru_comb() {
 
 static void ntru_test() {
 
-    ntru_params::poly_q sk, pk;
+    ntru_params::poly_q sk, pk, c1, c2, s[PARTIES], t[PARTIES], acc;
     ntru_params::poly_p m, _m;
-    ntru_params::poly_q c1, c2;
 
     ntru_keygen(pk, sk);
     ntru_sample_message(m);
@@ -260,6 +257,17 @@ static void ntru_test() {
         ntru_decrypt(_m, c1, sk);  // Decrypt the ciphertext with the new secret key.
         TEST_ASSERT(m - _m != 0, end);  // Check that the decryption is not successful with the wrong key.
     } TEST_END;
+    TEST_BEGIN("NTRU distributed decryption is consistent") {
+        ntru_keygen(pk, sk);
+        ntru_encrypt(c1, pk, m);
+        ntru_keyshare(s, NTRU_PARTIES, sk);
+        acc = s[0];
+        for (size_t i = 1; i < NTRU_PARTIES; i++) {
+            acc = acc + s[i];
+        }
+        TEST_ASSERT(sk - acc == 0, end);
+    } TEST_END;
+
     end:
         return;
 }
