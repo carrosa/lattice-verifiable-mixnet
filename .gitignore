@@ -1,6 +1,15 @@
 # Created by https://www.toptal.com/developers/gitignore/api/intellij+all,c,c++,cmake
 # Edit at https://www.toptal.com/developers/gitignore?templates=intellij+all,c,c++,cmake
 
+# Executables
+bdlop
+bgv
+shuffle
+ntru
+pismall
+pibnd
+
+
 deps/**
 
 ### C ###
