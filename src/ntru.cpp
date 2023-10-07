@@ -224,8 +224,33 @@ void ntru_decrypt(ntru_params::poly_p &m, ntru_params::poly_q &c, ntru_params::p
     }
 }
 
-void ntru_distdec() {
-    // TODO
+void ntru_distdec(ntru_params::poly_q &dsj, ntru_params::poly_q &ci, ntru_params::poly_q &dkj) {
+    std::array<mpz_t, NTRU_DEGREE> coeffs;
+    ntru_params::poly_q dsij, Ej;
+    mpz_t qDivBy2, bound;
+
+    mpz_init(qDivBy2);
+    mpz_init(bound);
+    for (size_t i = 0; i < ntru_params::poly_q::degree; i++) {
+        mpz_init2(coeffs[i], ntru_params::poly_q::bits_in_moduli_product() << 2);
+    }
+
+    mpz_fdiv_q_2exp(qDivBy2, ntru_params::poly_q::moduli_product(), 1);
+    mpz_set_str(bound, NTRU_BOUND_D, 10);
+
+    Ej = nfl::uniform();
+    Ej.poly2mpz(coeffs);
+    for (size_t i = 0; i< ntru_params::poly_q::degree; i++) {
+        util::center(coeffs[i], coeffs[i], ntru_params::poly_q::moduli_product(), qDivBy2);
+        mpz_mod(coeffs[i], coeffs[i], bound);
+    }
+    Ej.mpz2poly(coeffs);
+    Ej.ntt_pow_phi();
+    dsij = dkj * ci;
+    dsj = dsij;
+    for (size_t i = 0; i < NTRU_PRIMEP; i++) {
+        dsj = dsj + Ej;
+    }
 }
 
 void ntru_comb() {
@@ -262,10 +287,13 @@ static void ntru_test() {
         ntru_encrypt(c1, pk, m);
         ntru_keyshare(s, NTRU_PARTIES, sk);
         acc = s[0];
-        for (size_t i = 1; i < NTRU_PARTIES; i++) {
-            acc = acc + s[i];
+        for (size_t j = 1; j < NTRU_PARTIES; j++) {
+            acc = acc + s[j];
         }
         TEST_ASSERT(sk - acc == 0, end);
+        for (size_t j = 0; j < NTRU_PARTIES; j++) {
+            ntru_distdec(t[j], c1, s[j]);
+        }
     } TEST_END;
 
     end:

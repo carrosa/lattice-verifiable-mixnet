@@ -59,6 +59,7 @@ using namespace std;
 #define NTRU_SIGMA 13
 #define NTRU_DEGREE 2048
 #define NTRU_BOUND_B "1"
+#define NTRU_BOUND_D "1"
 #define NTRU_PARTIES 4
 
 
