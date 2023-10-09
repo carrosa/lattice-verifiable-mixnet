@@ -253,8 +253,33 @@ void ntru_distdec(ntru_params::poly_q &dsj, ntru_params::poly_q &ci, ntru_params
     }
 }
 
-void ntru_comb() {
+void ntru_comb(ntru_params::poly_p &m, ntru_params::poly_q c, ntru_params::poly_q dsj[], size_t shares) {
+    std::array<mpz_t, NTRU_DEGREE> coeffs;
+    ntru_params::poly_q v;
+    mpz_t qDivBy2;
 
+    mpz_init(qDivBy2);
+    for (size_t i = 0; i < ntru_params::poly_q::degree; i++) {
+        mpz_init2(coeffs[i], ntru_params::poly_q::bits_in_moduli_product() << 2);
+    }
+
+    mpz_fdiv_q_2exp(qDivBy2, ntru_params::poly_q::moduli_product(), 1);
+    v = dsj[0];
+    for (size_t i = 1; i < shares; i++) {
+        v = v + dsj[i];
+    }
+    v.invntt_pow_invphi();
+    v.poly2mpz(coeffs);
+    for (size_t i = 0; i < ntru_params::poly_q::degree; i++) {
+        util::center(coeffs[i], coeffs[i], ntru_params::poly_q::moduli_product(), qDivBy2);
+        mpz_mod_ui(coeffs[i], coeffs[i], NTRU_PRIMEP);
+    }
+    m.mpz2poly(coeffs);
+
+    mpz_clear(qDivBy2);
+    for (size_t i = 0; i < ntru_params::poly_q::degree; i++) {
+        mpz_clear(coeffs[i]);
+    }
 }
 
 #ifdef MAIN
@@ -294,6 +319,8 @@ static void ntru_test() {
         for (size_t j = 0; j < NTRU_PARTIES; j++) {
             ntru_distdec(t[j], c1, s[j]);
         }
+        ntru_comb(_m, c1, t, NTRU_PARTIES);
+        TEST_ASSERT(m - _m == 0, end);
     } TEST_END;
 
     end:
