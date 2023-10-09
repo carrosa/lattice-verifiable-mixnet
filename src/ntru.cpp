@@ -240,7 +240,7 @@ void ntru_distdec(ntru_params::poly_q &dsj, ntru_params::poly_q &ci, ntru_params
 
     Ej = nfl::uniform();
     Ej.poly2mpz(coeffs);
-    for (size_t i = 0; i< ntru_params::poly_q::degree; i++) {
+    for (size_t i = 0; i < ntru_params::poly_q::degree; i++) {
         util::center(coeffs[i], coeffs[i], ntru_params::poly_q::moduli_product(), qDivBy2);
         mpz_mod(coeffs[i], coeffs[i], bound);
     }
@@ -306,7 +306,8 @@ static void ntru_test() {
         ntru_keygen(pk, sk);  // Generate a new key pair.
         ntru_decrypt(_m, c1, sk);  // Decrypt the ciphertext with the new secret key.
         TEST_ASSERT(m - _m != 0, end);  // Check that the decryption is not successful with the wrong key.
-    } TEST_END;
+    }
+    TEST_END;
     TEST_BEGIN("NTRU distributed decryption is consistent") {
         ntru_keygen(pk, sk);
         ntru_encrypt(c1, pk, m);
@@ -321,23 +322,60 @@ static void ntru_test() {
         }
         ntru_comb(_m, c1, t, NTRU_PARTIES);
         TEST_ASSERT(m - _m == 0, end);
-    } TEST_END;
+    }
+    TEST_END;
 
     end:
-        return;
+    return;
+}
+
+static void bench() {
+    ntru_params::poly_q pk, sk, s[NTRU_PARTIES], t[NTRU_PARTIES], acc;
+    ntru_params::poly_p m, _m;
+    ntru_params::poly_q c;
+
+    BENCH_SMALL("ntru_keygen", ntru_keygen(pk, sk));
+
+    BENCH_BEGIN("ntru_sample_message")
+        {
+            BENCH_ADD(ntru_sample_message(m));
+        }
+    BENCH_END;
+
+    BENCH_BEGIN("ntru_decrypt")
+        {
+            ntru_encrypt(c, pk, m);
+            BENCH_ADD(ntru_decrypt(_m, c, sk));
+        }
+    BENCH_END;
+
+    ntru_keyshare(t, NTRU_PARTIES, sk);
+    BENCH_BEGIN("ntru_distdec")
+        {
+            ntru_encrypt(c, pk, m);
+            BENCH_ADD(ntru_distdec(t[0], c, s[0]));
+        }
+    BENCH_END;
+    for (size_t i = 1; i < PARTIES; i++) {
+        ntru_distdec(t[i], c, s[i]);
+    }
+
+    BENCH_BEGIN("ntru_comb")
+        {
+            BENCH_ADD(ntru_comb(_m, c, t, PARTIES));
+        }
+    BENCH_END;
 }
 
 // Main function to run tests and benchmarks.
 int main(int argc, char *arv[]) {
-    //printf("\n** Tests for BGV encryption:\n\n");
-    //test();
+    //printf("\n** Tests for NTRU encryption:\n\n");
+    //ntru_test();
 
-    printf("\n** Tests for NTRU encryption:\n\n");
-    ntru_test();
-
-    //printf("\n** Benchmarks for BGV encryption:\n\n");
-    //bench();
+    printf("\n** Benchmarks for NTRU encryption:\n\n");
+    bench();
 
     return 0;
 }
+
 #endif
