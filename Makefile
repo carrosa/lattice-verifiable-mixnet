@@ -6,7 +6,7 @@ BENCH = src/bench.c src/cpucycles.c
 TEST = src/test.c
 LIBS = deps/libnfllib_static.a -lgmp -lmpfr -L deps/ -lflint -lquadmath
 
-all: bdlop bgv shuffle pismall pibnd ntru
+all: bdlop bgv shuffle pismall pibnd ntru_bdlop ntru ntru_shuffle ntru_pismall
 
 bdlop: src/bdlop.cpp src/ntru.cpp ${TEST} ${BENCH} ${INCLUDES}
 	${CPP} ${CFLAGS} -c src/bgv.cpp -o bgv.o
@@ -20,12 +20,6 @@ shuffle: src/shuffle.cpp src/bdlop.cpp ${TEST} ${BENCH} ${INCLUDES}
 	${CPP} ${CFLAGS} -c src/bdlop.cpp -o bdlop.o
 	${CPP} ${CFLAGS} -DMAIN src/shuffle.cpp sample_z_small.o bdlop.o ${TEST} ${BENCH} ${BLAKE3} -o shuffle ${LIBS}
 
-ntru: src/ntru.cpp src/bdlop.cpp ${TEST} ${BENCH} ${INCLUDES}
-	${CPP} ${CFLAGS} -c src/sample_z_small.c -o sample_z_small.o
-	${CPP} ${CFLAGS} -c src/bdlop.cpp -o bdlop.o
-	${CPP} ${CFLAGS} -DMAIN src/ntru.cpp sample_z_small.o bdlop.o ${TEST} ${BENCH} ${BLAKE3} -o ntru ${LIBS}
-
-
 pismall: src/bdlop.cpp src/pismall.cpp ${TEST} ${BENCH} ${INCLUDES}
 	${CPP} ${CFLAGS} -DSIZE=3 -c src/bdlop.cpp -o bdlop.o
 	${CPP} ${CFLAGS} -DSIZE=3 -DMAIN src/pismall.cpp bdlop.o ${TEST} ${BENCH} ${BLAKE3} -o pismall ${LIBS}
@@ -35,5 +29,24 @@ pibnd: src/pibnd.cpp ${TEST} ${BENCH} ${INCLUDES}
 	${CPP} ${CFLAGS} -c src/sample_z_large.c -o sample_z_large.o
 	${CPP} ${CFLAGS} -DMAIN src/pibnd.cpp sample_z_small.o sample_z_large.o ${TEST} ${BENCH} ${BLAKE3} -o pibnd ${LIBS}
 
+
+ntru_bdlop: src/bdlop.cpp src/ntru.cpp ${TEST} ${BENCH} ${INCLUDES}
+	${CPP} ${CFLAGS} -c src/ntru.cpp -o ntru.o
+	${CPP} ${CFLAGS} -DMAIN src/ntru_bdlop.cpp ntru.o ${TEST} ${BENCH} -o ntru_bdlop ${LIBS}
+
+ntru: src/ntru.cpp src/bdlop.cpp ${TEST} ${BENCH} ${INCLUDES}
+	${CPP} ${CFLAGS} -c src/sample_z_small.c -o sample_z_small.o
+	${CPP} ${CFLAGS} -c src/ntru_bdlop.cpp -o ntru_bdlop.o
+	${CPP} ${CFLAGS} -DMAIN src/ntru.cpp sample_z_small.o ntru_bdlop.o ${TEST} ${BENCH} ${BLAKE3} -o ntru ${LIBS}
+
+ntru_pismall: src/ntru_bdlop.cpp src/ntru_pismall.cpp ${TEST} ${BENCH} ${INCLUDES}
+	${CPP} ${CFLAGS} -DSIZE=3 -c src/ntru_bdlop.cpp -o ntru_bdlop.o
+	${CPP} ${CFLAGS} -DSIZE=3 -DMAIN src/ntru_pismall.cpp ntru_bdlop.o ${TEST} ${BENCH} ${BLAKE3} -o ntru_pismall ${LIBS}
+
+ntru_shuffle: src/ntru_shuffle.cpp src/bdlop.cpp ${TEST} ${BENCH} ${INCLUDES}
+	${CPP} ${CFLAGS} -c src/sample_z_small.c -o sample_z_small.o
+	${CPP} ${CFLAGS} -c src/ntru_bdlop.cpp -o ntru_bdlop.o
+	${CPP} ${CFLAGS} -DMAIN src/ntru_shuffle.cpp sample_z_small.o ntru_bdlop.o ${TEST} ${BENCH} ${BLAKE3} -o ntru_shuffle ${LIBS}
+
 clean:
-	rm -f *.o bdlop bgv shuffle pismall pibnd ntru
+	rm -f *.o bdlop bgv shuffle pismall pibnd ntru ntru_shuffle ntru_pismall ntru_bdlop

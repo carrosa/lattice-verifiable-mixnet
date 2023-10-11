@@ -11,43 +11,67 @@
 #include "blake3.h"
 
 #define ETA         325
-#define R           (HEIGHT+2) // HEIGHT + 1
-#define V           (WIDTH+3) // WIDTH + 1
-#define TAU         1 // 1000
+#define R           (HEIGHT+1) // HEIGHT + 1
+#define V           (WIDTH+1) // WIDTH + 1
+#define TAU         1// 1000
 
 /* Had to move those to global to avoid overflowing the stack. */
 params::poly_q A[R][V], s[TAU][V], t[TAU][R];
 params::poly_big H0[V], _H[V], H[TAU][3];
 
+/*
+ * @param[in] x         Integer of type fmpz_t from FLINT
+ * @param[in] beta0     Integer of type fmpz_t from FLINT
+ * @param[in] beta      2D array of fmpz_t type integers from FLINT
+ * @param[in] q         Integer of type fmpz_t from FLINT
+ * @param[in] com       Reference to a commit of type commit_t
+ * */
 static void pismall_hash(fmpz_t x, fmpz_t beta0, fmpz_t beta[TAU][3], fmpz_t q,
                          commit_t & com) {
+    // Declare an array named hash of uint8_t (unsigned 8-bit integer) with length BLAKE3_OUT_LEN
     uint8_t hash[BLAKE3_OUT_LEN];
+    // Declare a variable hasher of type blake3_hasher (likely a struct or class from the BLAKE3 hashing library)
     blake3_hasher hasher;
+    // Declare a variable rand of type flint_rand_t (likely a struct or class from the FLINT library for random number generation)
     flint_rand_t rand;
+    // Declare an array named seed of ulong (unsigned long) with 2 elements
     ulong seed[2];
 
+    // Initialize the rand variable using the flint_randinit function from the FLINT library
     flint_randinit(rand);
 
+    // Initialize the hasher variable using the blake3_hasher_init function from the BLAKE3 library
     blake3_hasher_init(&hasher);
-    blake3_hasher_update(&hasher, (const uint8_t *)com.c1.data(), 16 * DEGREE);
+    // Update the hasher with data from com.c1 using the blake3_hasher_update function.
+    // The data is treated as an array of uint8_t and has a size of 16 * NTRU_DEGREE
+    blake3_hasher_update(&hasher, (const uint8_t *)com.c1.data(), 16 * NTRU_DEGREE);
+    // Iterate over the size of com.c2 and update the hasher with data from each element of com.c2
     for (size_t i = 0; i < com.c2.size(); i++) {
         blake3_hasher_update(&hasher, (const uint8_t *)com.c2[i].data(),
-                             16 * DEGREE);
+                             16 * NTRU_DEGREE);
     }
 
+    // Finalize the hashing process and store the result in the hash array
     blake3_hasher_finalize(&hasher, hash, BLAKE3_OUT_LEN);
 
+    // Copy the first sizeof(ulong) bytes from hash to seed[0]
     memcpy(&seed[0], hash, sizeof(ulong));
+    // Copy the next sizeof(ulong) bytes from the middle of hash to seed[1]
     memcpy(&seed[1], hash + BLAKE3_OUT_LEN / 2, sizeof(ulong));
+    // Seed the random number generator rand with seed[0] and seed[1]
     flint_randseed(rand, seed[0], seed[1]);
+    // Generate a random number modulo q and store it in x
     fmpz_randm(x, rand, q);
+    // Generate another random number modulo q and store it in beta0
     fmpz_randm(beta0, rand, q);
+    // Iterate over the 2D array beta and fill it with random numbers modulo q
     for (size_t i = 0; i < TAU; i++) {
         for (size_t j = 0; j < 3; j++) {
             fmpz_randm(beta[i][j], rand, q);
         }
     }
 }
+
 
 static void poly_to(params::poly_q & out, fmpz_mod_poly_t & in,
                     const fmpz_mod_ctx_t ctx) {
@@ -185,7 +209,7 @@ static int pismall_prover(commit_t & com, fmpz_t x, fmpz_mod_poly_t f[V],
     fmpz_set_mpz(q, params::poly_q::moduli_product());
     fmpz_mod_ctx_init(ctx_q, q);
 
-    fmpz_set_str(q, PRIMEQ, 10);
+    fmpz_set_ui(q, NTRU_PRIMEQ);
     fmpz_mod_poly_init(poly, ctx);
     fmpz_mod_poly_init(zero, ctx);
     for (size_t i = 0; i < params::poly_q::degree; i++) {
@@ -451,7 +475,7 @@ static int pismall_verifier(commit_t & com, fmpz_mod_poly_t f[V],
         }
     }
 
-    fmpz_set_str(q, PRIMEQ, 10);
+    fmpz_set_ui(q, NTRU_PRIMEQ);
     pismall_hash(x, beta0, beta, q, com);
 
     fmpz_set_mpz(q, params::poly_q::moduli_product());
@@ -533,7 +557,7 @@ static void test(flint_rand_t rand) {
     fmpz_set_mpz(q, params::poly_q::moduli_product());
     fmpz_mod_ctx_init(ctx_q, q);
 
-    fmpz_set_str(q, PRIMEQ, 10);
+    fmpz_set_ui(q, NTRU_PRIMEQ);
     fmpz_mod_ctx_init(ctx, q);
     fmpz_mod_poly_init(poly, ctx);
     for (int i = 0; i < V; i++) {
@@ -562,7 +586,7 @@ static void test(flint_rand_t rand) {
         fmpz_mod_poly_init(lag[i], ctx);
         for (int j = 0; j < V; j++) {
             s[i][j] = nfl::hwt_dist {
-                    2 *DEGREE / 3};
+                    2 *NTRU_DEGREE / 3};
             s[i][j].ntt_pow_phi();
         }
         for (int j = 0; j < R; j++) {

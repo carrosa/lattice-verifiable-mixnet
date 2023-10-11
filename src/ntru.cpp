@@ -342,6 +342,12 @@ static void bench() {
         }
     BENCH_END;
 
+    BENCH_BEGIN("ntru_encrypt")
+        {
+            BENCH_ADD(ntru_encrypt(c, pk, m));
+        }
+    BENCH_END;
+
     BENCH_BEGIN("ntru_decrypt")
         {
             ntru_encrypt(c, pk, m);
