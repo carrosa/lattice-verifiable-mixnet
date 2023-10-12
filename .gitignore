@@ -5,9 +5,13 @@
 bdlop
 bgv
 shuffle
-ntru
 pismall
 pibnd
+ntru
+ntru_shuffle
+ntru_pismall
+ntru_bdlop
+
 
 
 deps/**
