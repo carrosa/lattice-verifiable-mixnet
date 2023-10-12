@@ -61,6 +61,14 @@ using namespace std;
 #define NTRU_BOUND_B "1"
 #define NTRU_BOUND_D "1"
 #define NTRU_PARTIES 4
+/* Dimension of the committed messages. */
+#ifndef NTRU_SIZE
+#define NTRU_SIZE 1
+#endif
+/* Width k of the commitment matrix. */
+#define NTRU_WIDTH 4
+/* Height of the commitment matrix. */
+#define NTRU_HEIGHT 1
 
 
 namespace params {
