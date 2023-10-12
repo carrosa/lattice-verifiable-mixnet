@@ -27,7 +27,7 @@ params::poly_big H0[V], _H[V], H[TAU][3];
  * @param[in] com       Reference to a commit of type commit_t
  * */
 static void pismall_hash(fmpz_t x, fmpz_t beta0, fmpz_t beta[TAU][3], fmpz_t q,
-                         commit_t & com) {
+                         commit_t &com) {
     // Declare an array named hash of uint8_t (unsigned 8-bit integer) with length BLAKE3_OUT_LEN
     uint8_t hash[BLAKE3_OUT_LEN];
     // Declare a variable hasher of type blake3_hasher (likely a struct or class from the BLAKE3 hashing library)
@@ -44,10 +44,10 @@ static void pismall_hash(fmpz_t x, fmpz_t beta0, fmpz_t beta[TAU][3], fmpz_t q,
     blake3_hasher_init(&hasher);
     // Update the hasher with data from com.c1 using the blake3_hasher_update function.
     // The data is treated as an array of uint8_t and has a size of 16 * NTRU_DEGREE
-    blake3_hasher_update(&hasher, (const uint8_t *)com.c1.data(), 16 * NTRU_DEGREE);
+    blake3_hasher_update(&hasher, (const uint8_t *) com.c1.data(), 16 * NTRU_DEGREE);
     // Iterate over the size of com.c2 and update the hasher with data from each element of com.c2
     for (size_t i = 0; i < com.c2.size(); i++) {
-        blake3_hasher_update(&hasher, (const uint8_t *)com.c2[i].data(),
+        blake3_hasher_update(&hasher, (const uint8_t *) com.c2[i].data(),
                              16 * NTRU_DEGREE);
     }
 
@@ -73,9 +73,9 @@ static void pismall_hash(fmpz_t x, fmpz_t beta0, fmpz_t beta[TAU][3], fmpz_t q,
 }
 
 
-static void poly_to(params::poly_q & out, fmpz_mod_poly_t & in,
+static void poly_to(params::poly_q &out, fmpz_mod_poly_t &in,
                     const fmpz_mod_ctx_t ctx) {
-    array < mpz_t, params::poly_q::degree > coeffs;
+    array<mpz_t, params::poly_q::degree> coeffs;
 
     for (size_t i = 0; i < params::poly_q::degree; i++) {
         mpz_init2(coeffs[i], (params::poly_q::bits_in_moduli_product() << 2));
@@ -93,9 +93,9 @@ static void poly_to(params::poly_q & out, fmpz_mod_poly_t & in,
     }
 }
 
-static void poly_encode(params::poly_big & out, fmpz_mod_poly_t in0,
+static void poly_encode(params::poly_big &out, fmpz_mod_poly_t in0,
                         fmpz_mod_poly_t in1, fmpz_t in[ETA], const fmpz_mod_ctx_t ctx) {
-    array < mpz_t, params::poly_big::degree > coeffs;
+    array<mpz_t, params::poly_big::degree> coeffs;
     size_t i;
 
     for (i = 0; i < params::poly_big::degree; i++) {
@@ -120,9 +120,9 @@ static void poly_encode(params::poly_big & out, fmpz_mod_poly_t in0,
     }
 }
 
-static void poly_from(fmpz_mod_poly_t & out, params::poly_q & in,
+static void poly_from(fmpz_mod_poly_t &out, params::poly_q &in,
                       const fmpz_mod_ctx_t ctx) {
-    array < mpz_t, params::poly_q::degree > coeffs;
+    array<mpz_t, params::poly_q::degree> coeffs;
 
     in.invntt_pow_invphi();
 
@@ -145,9 +145,9 @@ static void poly_from(fmpz_mod_poly_t & out, params::poly_q & in,
     }
 }
 
-static void pismall_setup(fmpz_mod_poly_t lag[], fmpz_t a[TAU], fmpz_t & q,
+static void pismall_setup(fmpz_mod_poly_t lag[], fmpz_t a[TAU], fmpz_t &q,
                           flint_rand_t prng, const fmpz_mod_ctx_t ctx) {
-    array < mpz_t, params::poly_q::degree > coeffs;
+    array<mpz_t, params::poly_q::degree> coeffs;
     fmpz_t t, u;
     fmpz xs[TAU];
 
@@ -191,16 +191,33 @@ static void pismall_setup(fmpz_mod_poly_t lag[], fmpz_t a[TAU], fmpz_t & q,
     }
 }
 
-static int pismall_prover(commit_t & com, fmpz_t x, fmpz_mod_poly_t f[V],
+/**
+ * Proves the correctness of a commitment using the PiSmall protocol.
+ *
+ * @param com Reference to the commitment.
+ * @param x An integer.
+ * @param f Array of polynomials of size V.
+ * @param rf Array of integers of size ETA.
+ * @param h 2D array of polynomials with dimensions [2][V].
+ * @param rh Array of integers of size ETA.
+ * @param rd Vector of parameters of type poly_q.
+ * @param key Commitment key.
+ * @param lag Array of polynomials of size TAU + 1.
+ * @param prng Random number generator of type flint_rand_t.
+ * @param ctx Context.
+ *
+ * @return Returns 1 on successful execution.
+ */
+static int pismall_prover(commit_t &com, fmpz_t x, fmpz_mod_poly_t f[V],
                           fmpz_t rf[ETA], fmpz_mod_poly_t h[2][V], fmpz_t rh[ETA],
-                          vector < params::poly_q > rd, comkey_t & key,
+                          vector<params::poly_q> rd, comkey_t &key,
                           fmpz_mod_poly_t lag[TAU + 1], flint_rand_t prng,
                           const fmpz_mod_ctx_t ctx) {
-    array < mpz_t, params::poly_q::degree > coeffs, coeffs0, v[3][TAU][V];
+    array<mpz_t, params::poly_q::degree> coeffs, coeffs0, v[3][TAU][V];
     fmpz_mod_poly_t poly, zero;
     fmpz_t t, u, q, y[TAU], beta0, beta[TAU][3], r0[ETA], r[TAU][3][ETA];
     fmpz_mod_ctx_t ctx_q;
-    vector < params::poly_q > d;
+    vector<params::poly_q> d;
     params::poly_q s0[V];
 
     fmpz_init(t);
@@ -454,16 +471,16 @@ static int pismall_prover(commit_t & com, fmpz_t x, fmpz_mod_poly_t f[V],
     return 1;
 }
 
-static int pismall_verifier(commit_t & com, fmpz_mod_poly_t f[V],
-                            fmpz_t rf[ETA], vector < params::poly_q > rd, comkey_t & key,
+static int pismall_verifier(commit_t &com, fmpz_mod_poly_t f[V],
+                            fmpz_t rf[ETA], vector<params::poly_q> rd, comkey_t &key,
                             fmpz_mod_poly_t lag[TAU + 1], flint_rand_t prng,
                             const fmpz_mod_ctx_t ctx) {
-    array < mpz_t, params::poly_q::degree > coeffs;
+    array<mpz_t, params::poly_q::degree> coeffs;
     fmpz_mod_poly_t poly, r[R], _d[R];
     fmpz_mod_ctx_t ctx_q;
     fmpz_t q, y, x, beta0, beta[TAU][3];
     params::poly_q one = 1;
-    vector < params::poly_q > m;
+    vector<params::poly_q> m;
 
     fmpz_init(q);
     fmpz_init(x);
@@ -548,7 +565,7 @@ static void test(flint_rand_t rand) {
     fmpz_mod_ctx_t ctx, ctx_q;
     comkey_t key;
     commit_t com;
-    vector < params::poly_q > rd;
+    vector<params::poly_q> rd;
     fmpz_mod_poly_t f[V], lag[TAU + 1], h[2][V];
 
     fmpz_init(q);
@@ -585,8 +602,8 @@ static void test(flint_rand_t rand) {
     for (int i = 0; i < TAU; i++) {
         fmpz_mod_poly_init(lag[i], ctx);
         for (int j = 0; j < V; j++) {
-            s[i][j] = nfl::hwt_dist {
-                    2 *NTRU_DEGREE / 3};
+            s[i][j] = nfl::hwt_dist{
+                    2 * NTRU_DEGREE / 3};
             s[i][j].ntt_pow_phi();
         }
         for (int j = 0; j < R; j++) {
@@ -620,18 +637,21 @@ static void test(flint_rand_t rand) {
                 TEST_ASSERT(rd[0] == rd[1], end);
             }
         }
-    } TEST_END;
+    }
+    TEST_END;
 
     pismall_setup(lag, a, q, rand, ctx);
 
     bdlop_keygen(key);
     bdlop_sample_rand(rd);
 
-    TEST_ONCE("AEX proof is consistent") {
+    TEST_ONCE("AEX proof is consistent")
+    {
         pismall_prover(com, x, f, rf, h, rh, rd, key, lag, rand, ctx);
         TEST_ASSERT(pismall_verifier(com, f, rf, rd, key, lag, rand, ctx) == 1,
                     end);
-    } TEST_END;
+    }
+    TEST_END;
 
     printf("\n** Benchmarks for lattice-based AEX proof:\n\n");
     BENCH_SMALL("pismall_setup", pismall_setup(lag, a, q, rand, ctx));
