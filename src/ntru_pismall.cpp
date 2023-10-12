@@ -13,7 +13,7 @@
 #define ETA         325
 #define R           (HEIGHT+1) // HEIGHT + 1
 #define V           (WIDTH+1) // WIDTH + 1
-#define TAU         1// 1000
+#define TAU         10// 1000
 
 /* Had to move those to global to avoid overflowing the stack. */
 params::poly_q A[R][V], s[TAU][V], t[TAU][R];

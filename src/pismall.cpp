@@ -11,8 +11,8 @@
 #include "blake3.h"
 
 #define ETA         325
-#define R           (HEIGHT+2) // HEIGHT + 1
-#define V           (WIDTH+3) // WIDTH + 1
+#define R           (HEIGHT+1) // HEIGHT + 1
+#define V           (WIDTH+1) // WIDTH + 1
 #define TAU         1 // 1000
 
 /* Had to move those to global to avoid overflowing the stack. */

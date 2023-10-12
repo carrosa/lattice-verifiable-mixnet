@@ -20,9 +20,9 @@
 
 // Input til shuffle er 1 mld ikke 2.
 
-static void lin_hash(params::poly_q &beta, comkey_t &key, commit_t x,
-                     commit_t y, params::poly_q alpha[2], params::poly_q &u,
-                     params::poly_q t, params::poly_q _t) {
+static void lin_hash(ntru_params::poly_q &beta, ntru_comkey_t &key, ntru_commit_t x,
+                     ntru_commit_t y, ntru_params::poly_q alpha[2], ntru_params::poly_q &u,
+                     ntru_params::poly_q t, ntru_params::poly_q _t) {
     uint8_t hash[BLAKE3_OUT_LEN];
     blake3_hasher hasher;
 
@@ -32,80 +32,78 @@ static void lin_hash(params::poly_q &beta, comkey_t &key, commit_t x,
     for (size_t i = 0; i < NTRU_HEIGHT; i++) {
         for (int j = 0; j < NTRU_WIDTH - NTRU_HEIGHT; j++) {
             blake3_hasher_update(&hasher, (const uint8_t *) key.A1[i][j].data(),
-                                 16 * DEGREE);
+                                 16 * NTRU_DEGREE);
         }
     }
     for (size_t j = 0; j < NTRU_WIDTH; j++) {
-        blake3_hasher_update(&hasher, (const uint8_t *) key.A2[0][j].data(),
-                             16 * DEGREE);
+        blake3_hasher_update(&hasher, (const uint8_t *) key.A2[j].data(),
+                             16 * NTRU_DEGREE);
     }
 
     /* Hash alpha, beta from linear relation. */
     for (size_t i = 0; i < 2; i++) {
         blake3_hasher_update(&hasher, (const uint8_t *) alpha[i].data(),
-                             16 * DEGREE);
+                             16 * NTRU_DEGREE);
     }
 
-    blake3_hasher_update(&hasher, (const uint8_t *) x.c1.data(), 16 * DEGREE);
-    blake3_hasher_update(&hasher, (const uint8_t *) y.c1.data(), 16 * DEGREE);
-    for (size_t i = 0; i < x.c2.size(); i++) {
-        blake3_hasher_update(&hasher, (const uint8_t *) x.c2[i].data(),
-                             16 * DEGREE);
-        blake3_hasher_update(&hasher, (const uint8_t *) y.c2[i].data(),
-                             16 * DEGREE);
-    }
+    blake3_hasher_update(&hasher, (const uint8_t *) x.c1.data(), 16 * NTRU_DEGREE);
+    blake3_hasher_update(&hasher, (const uint8_t *) y.c1.data(), 16 * NTRU_DEGREE);
+    blake3_hasher_update(&hasher, (const uint8_t *) x.c2.data(),
+                         16 * NTRU_DEGREE);
+    blake3_hasher_update(&hasher, (const uint8_t *) y.c2.data(),
+                         16 * NTRU_DEGREE);
 
-    blake3_hasher_update(&hasher, (const uint8_t *) u.data(), 16 * DEGREE);
-    blake3_hasher_update(&hasher, (const uint8_t *) t.data(), 16 * DEGREE);
-    blake3_hasher_update(&hasher, (const uint8_t *) _t.data(), 16 * DEGREE);
+    blake3_hasher_update(&hasher, (const uint8_t *) u.data(), 16 * NTRU_DEGREE);
+    blake3_hasher_update(&hasher, (const uint8_t *) t.data(), 16 * NTRU_DEGREE);
+    blake3_hasher_update(&hasher, (const uint8_t *) _t.data(), 16 * NTRU_DEGREE);
 
     blake3_hasher_finalize(&hasher, hash, BLAKE3_OUT_LEN);
 
     /* Sample challenge from RNG seeded with hash. */
     nfl::fastrandombytes_seed(hash);
-    bdlop_sample_chal(beta);
+    ntru_bdlop_sample_chal(beta);
     nfl::fastrandombytes_reseed();
 }
 
-static void poly_inverse(params::poly_q &inv, params::poly_q p) {
-    std::array<mpz_t, params::poly_q::degree> coeffs;
+static void poly_inverse(ntru_params::poly_q &inv, ntru_params::poly_q p) {
+    std::array<mpz_t, ntru_params::poly_q::degree> coeffs;
     fmpz_t q;
     fmpz_mod_poly_t poly, irred;
     fmpz_mod_ctx_t ctx_q;
 
     fmpz_init(q);
-    for (size_t i = 0; i < params::poly_q::degree; i++) {
-        mpz_init2(coeffs[i], (params::poly_q::bits_in_moduli_product() << 2));
+    for (size_t i = 0; i < ntru_params::poly_q::degree; i++) {
+        mpz_init2(coeffs[i], (ntru_params::poly_q::bits_in_moduli_product() << 2));
     }
 
-    fmpz_set_mpz(q, params::poly_q::moduli_product());
+    fmpz_set_mpz(q, ntru_params::poly_q::moduli_product());
     fmpz_mod_ctx_init(ctx_q, q);
     fmpz_mod_poly_init(poly, ctx_q);
     fmpz_mod_poly_init(irred, ctx_q);
 
     p.poly2mpz(coeffs);
-    fmpz_mod_poly_set_coeff_ui(irred, params::poly_q::degree, 1, ctx_q);
+    fmpz_mod_poly_set_coeff_ui(irred, ntru_params::poly_q::degree, 1, ctx_q);
     fmpz_mod_poly_set_coeff_ui(irred, 0, 1, ctx_q);
 
-    for (size_t i = 0; i < params::poly_q::degree; i++) {
+    for (size_t i = 0; i < ntru_params::poly_q::degree; i++) {
         fmpz_mod_poly_set_coeff_mpz(poly, i, coeffs[i], ctx_q);
     }
     fmpz_mod_poly_invmod(poly, poly, irred, ctx_q);
 
-    for (size_t i = 0; i < params::poly_q::degree; i++) {
+    for (size_t i = 0; i < ntru_params::poly_q::degree; i++) {
         fmpz_mod_poly_get_coeff_mpz(coeffs[i], poly, i, ctx_q);
     }
 
     inv.mpz2poly(coeffs);
 
     fmpz_clear(q);
-    for (size_t i = 0; i < params::poly_q::degree; i++) {
+    for (size_t i = 0; i < ntru_params::poly_q::degree; i++) {
         mpz_clear(coeffs[i]);
     }
 }
 
-static void simul_inverse(params::poly_q inv[MSGS], params::poly_q m[MSGS]) {
-    params::poly_q u, t[MSGS];
+static void simul_inverse(ntru_params::poly_q inv[MSGS], ntru_params::poly_q m[MSGS]) {
+    ntru_params::poly_q u, t[MSGS];
     inv[0] = m[0];
     t[0] = m[0];
 
@@ -126,10 +124,10 @@ static void simul_inverse(params::poly_q inv[MSGS], params::poly_q m[MSGS]) {
     inv[0] = u;
 }
 
-static int rej_sampling(params::poly_q z[NTRU_WIDTH], params::poly_q v[NTRU_WIDTH],
+static int rej_sampling(ntru_params::poly_q z[NTRU_WIDTH], ntru_params::poly_q v[NTRU_WIDTH],
                         uint64_t s2) {
-    array<mpz_t, params::poly_q::degree> coeffs0, coeffs1;
-    params::poly_q t;
+    array<mpz_t, ntru_params::poly_q::degree> coeffs0, coeffs1;
+    ntru_params::poly_q t;
     mpz_t dot, norm, qDivBy2, tmp;
     double r, M = 1.75;
     int64_t seed;
@@ -142,12 +140,12 @@ static int rej_sampling(params::poly_q z[NTRU_WIDTH], params::poly_q v[NTRU_WIDT
     mpf_init(u);
     gmp_randinit_mt(state);
     mpz_inits(dot, norm, qDivBy2, tmp, nullptr);
-    for (size_t i = 0; i < params::poly_q::degree; i++) {
-        mpz_init2(coeffs0[i], (params::poly_q::bits_in_moduli_product() << 2));
-        mpz_init2(coeffs1[i], (params::poly_q::bits_in_moduli_product() << 2));
+    for (size_t i = 0; i < ntru_params::poly_q::degree; i++) {
+        mpz_init2(coeffs0[i], (ntru_params::poly_q::bits_in_moduli_product() << 2));
+        mpz_init2(coeffs1[i], (ntru_params::poly_q::bits_in_moduli_product() << 2));
     }
 
-    mpz_fdiv_q_2exp(qDivBy2, params::poly_q::moduli_product(), 1);
+    mpz_fdiv_q_2exp(qDivBy2, ntru_params::poly_q::moduli_product(), 1);
     mpz_set_ui(norm, 0);
     mpz_set_ui(dot, 0);
     for (int i = 0; i < NTRU_WIDTH; i++) {
@@ -157,11 +155,11 @@ static int rej_sampling(params::poly_q z[NTRU_WIDTH], params::poly_q v[NTRU_WIDT
         t = v[i];
         t.invntt_pow_invphi();
         t.poly2mpz(coeffs1);
-        for (size_t i = 0; i < params::poly_q::degree; i++) {
+        for (size_t i = 0; i < ntru_params::poly_q::degree; i++) {
             util::center(coeffs0[i], coeffs0[i],
-                         params::poly_q::moduli_product(), qDivBy2);
+                         ntru_params::poly_q::moduli_product(), qDivBy2);
             util::center(coeffs1[i], coeffs1[i],
-                         params::poly_q::moduli_product(), qDivBy2);
+                         ntru_params::poly_q::moduli_product(), qDivBy2);
             mpz_mul(tmp, coeffs0[i], coeffs1[i]);
             mpz_add(dot, dot, tmp);
             mpz_mul(tmp, coeffs1[i], coeffs1[i]);
@@ -181,40 +179,40 @@ static int rej_sampling(params::poly_q z[NTRU_WIDTH], params::poly_q v[NTRU_WIDT
 
     mpf_clear(u);
     mpz_clears(dot, norm, qDivBy2, tmp, nullptr);
-    for (size_t i = 0; i < params::poly_q::degree; i++) {
+    for (size_t i = 0; i < ntru_params::poly_q::degree; i++) {
         mpz_clear(coeffs0[i]);
         mpz_clear(coeffs1[i]);
     }
     return result;
 }
 
-static void lin_prover(params::poly_q y[NTRU_WIDTH], params::poly_q _y[NTRU_WIDTH],
-                       params::poly_q &t, params::poly_q &_t, params::poly_q &u,
-                       commit_t x, commit_t _x, params::poly_q alpha[2],
-                       comkey_t &key, vector<params::poly_q> r,
-                       vector<params::poly_q> _r) {
-    params::poly_q beta, tmp[NTRU_WIDTH], _tmp[NTRU_WIDTH];
-    array<mpz_t, params::poly_q::degree> coeffs;
+static void lin_prover(ntru_params::poly_q y[NTRU_WIDTH], ntru_params::poly_q _y[NTRU_WIDTH],
+                       ntru_params::poly_q &t, ntru_params::poly_q &_t, ntru_params::poly_q &u,
+                       ntru_commit_t x, ntru_commit_t _x, ntru_params::poly_q alpha[2],
+                       ntru_comkey_t &key, vector<ntru_params::poly_q> r,
+                       vector<ntru_params::poly_q> _r) {
+    ntru_params::poly_q beta, tmp[NTRU_WIDTH], _tmp[NTRU_WIDTH];
+    array<mpz_t, ntru_params::poly_q::degree> coeffs;
     mpz_t qDivBy2;
     int rej0, rej1;
 
     mpz_init(qDivBy2);
-    for (size_t i = 0; i < params::poly_q::degree; i++) {
-        mpz_init2(coeffs[i], (params::poly_q::bits_in_moduli_product() << 2));
+    for (size_t i = 0; i < ntru_params::poly_q::degree; i++) {
+        mpz_init2(coeffs[i], (ntru_params::poly_q::bits_in_moduli_product() << 2));
     }
-    mpz_fdiv_q_2exp(qDivBy2, params::poly_q::moduli_product(), 1);
+    mpz_fdiv_q_2exp(qDivBy2, ntru_params::poly_q::moduli_product(), 1);
 
     do {
         /* Prover samples y,y' from Gaussian. */
         for (int i = 0; i < NTRU_WIDTH; i++) {
-            for (size_t k = 0; k < params::poly_q::degree; k++) {
-                int64_t coeff = sample_z(0.0, SIGMA_C);
+            for (size_t k = 0; k < ntru_params::poly_q::degree; k++) {
+                int64_t coeff = sample_z(0.0, NTRU_SIGMA_C);
                 mpz_set_si(coeffs[k], coeff);
             }
             y[i].mpz2poly(coeffs);
             y[i].ntt_pow_phi();
-            for (size_t k = 0; k < params::poly_q::degree; k++) {
-                int64_t coeff = sample_z(0.0, SIGMA_C);
+            for (size_t k = 0; k < ntru_params::poly_q::degree; k++) {
+                int64_t coeff = sample_z(0.0, NTRU_SIGMA_C);
                 mpz_set_si(coeffs[k], coeff);
             }
             _y[i].mpz2poly(coeffs);
@@ -232,7 +230,7 @@ static void lin_prover(params::poly_q y[NTRU_WIDTH], params::poly_q _y[NTRU_WIDT
 
         u = 0;
         for (int i = 0; i < NTRU_WIDTH; i++) {
-            u = u + alpha[0] * (key.A2[0][i] * y[i]) - (key.A2[0][i] * _y[i]);
+            u = u + alpha[0] * (key.A2[i] * y[i]) - (key.A2[i] * _y[i]);
         }
 
         /* Sample challenge. */
@@ -249,16 +247,16 @@ static void lin_prover(params::poly_q y[NTRU_WIDTH], params::poly_q _y[NTRU_WIDT
         rej1 = rej_sampling(_y, _tmp, SIGMA_C * SIGMA_C);
     } while (rej0 || rej1);
 
-    for (size_t i = 0; i < params::poly_q::degree; i++) {
+    for (size_t i = 0; i < ntru_params::poly_q::degree; i++) {
         mpz_clear(coeffs[i]);
     }
     mpz_clear(qDivBy2);
 }
 
-static int lin_verifier(params::poly_q z[NTRU_WIDTH], params::poly_q _z[NTRU_WIDTH],
-                        params::poly_q t, params::poly_q _t, params::poly_q u,
-                        commit_t x, commit_t _x, params::poly_q alpha[2], comkey_t &key) {
-    params::poly_q beta, v, _v, tmp, zero = 0;
+static int lin_verifier(ntru_params::poly_q z[NTRU_WIDTH], ntru_params::poly_q _z[NTRU_WIDTH],
+                        ntru_params::poly_q t, ntru_params::poly_q _t, ntru_params::poly_q u,
+                        ntru_commit_t x, ntru_commit_t _x, ntru_params::poly_q alpha[2], ntru_comkey_t &key) {
+    ntru_params::poly_q beta, v, _v, tmp, zero = 0;
     int result = 1;
 
     /* Sample challenge. */
@@ -268,10 +266,10 @@ static int lin_verifier(params::poly_q z[NTRU_WIDTH], params::poly_q _z[NTRU_WID
     for (int i = 0; i < NTRU_WIDTH; i++) {
         v = z[i];
         v.invntt_pow_invphi();
-        result &= bdlop_test_norm(v, 4 * SIGMA_C * SIGMA_C);
+        result &= ntru_bdlop_test_norm(v, 4 * SIGMA_C * SIGMA_C);
         v = _z[i];
         v.invntt_pow_invphi();
-        result &= bdlop_test_norm(v, 4 * SIGMA_C * SIGMA_C);
+        result &= ntru_bdlop_test_norm(v, 4 * SIGMA_C * SIGMA_C);
     }
 
     /* Verifier computes A1z and A1z'. */
@@ -293,9 +291,9 @@ static int lin_verifier(params::poly_q z[NTRU_WIDTH], params::poly_q _z[NTRU_WID
 
     v = 0;
     for (int i = 0; i < NTRU_WIDTH; i++) {
-        v = v + alpha[0] * (key.A2[0][i] * z[i]) - (key.A2[0][i] * _z[i]);
+        v = v + alpha[0] * (key.A2[i] * z[i]) - (key.A2[i] * _z[i]);
     }
-    t = (alpha[0] * x.c2[0] + alpha[1] - _x.c2[0]) * beta + u;
+    t = (alpha[0] * x.c2 + alpha[1] - _x.c2) * beta + u;
 
     t.invntt_pow_invphi();
     v.invntt_pow_invphi();
@@ -304,8 +302,8 @@ static int lin_verifier(params::poly_q z[NTRU_WIDTH], params::poly_q _z[NTRU_WID
     return result;
 }
 
-void shuffle_hash(params::poly_q &beta, commit_t c[MSGS], commit_t d[MSGS],
-                  params::poly_q _ms[MSGS], params::poly_q rho[NTRU_SIZE]) {
+void shuffle_hash(ntru_params::poly_q &beta, ntru_commit_t c[MSGS], ntru_commit_t d[MSGS],
+                  ntru_params::poly_q _ms[MSGS], ntru_params::poly_q rho) {
     uint8_t hash[BLAKE3_OUT_LEN];
     blake3_hasher hasher;
     blake3_hasher_init(&hasher);
@@ -314,22 +312,20 @@ void shuffle_hash(params::poly_q &beta, commit_t c[MSGS], commit_t d[MSGS],
 
     for (int i = 0; i < MSGS; i++) {
         blake3_hasher_update(&hasher, (const uint8_t *) _ms[i].data(),
-                             16 * DEGREE);
+                             16 * NTRU_DEGREE);
         blake3_hasher_update(&hasher, (const uint8_t *) c[i].c1.data(),
-                             16 * DEGREE);
+                             16 * NTRU_DEGREE);
         blake3_hasher_update(&hasher, (const uint8_t *) d[i].c1.data(),
-                             16 * DEGREE);
-        for (size_t j = 0; j < c[j].c2.size(); j++) {
-            blake3_hasher_update(&hasher, (const uint8_t *) c[i].c2[j].data(),
-                                 16 * DEGREE);
-            blake3_hasher_update(&hasher, (const uint8_t *) d[i].c2[j].data(),
-                                 16 * DEGREE);
-        }
+                             16 * NTRU_DEGREE);
+        blake3_hasher_update(&hasher, (const uint8_t *) c[i].c2.data(),
+                             16 * NTRU_DEGREE);
+        blake3_hasher_update(&hasher, (const uint8_t *) d[i].c2.data(),
+                             16 * NTRU_DEGREE);
     }
 
     for (int i = 0; i < NTRU_SIZE; i++) {
-        blake3_hasher_update(&hasher, (const uint8_t *) rho[i].data(),
-                             16 * DEGREE);
+        blake3_hasher_update(&hasher, (const uint8_t *) rho.data(),
+                             16 * NTRU_DEGREE);
     }
     blake3_hasher_finalize(&hasher, hash, BLAKE3_OUT_LEN);
 
@@ -339,35 +335,35 @@ void shuffle_hash(params::poly_q &beta, commit_t c[MSGS], commit_t d[MSGS],
     nfl::fastrandombytes_reseed();
 }
 
-static void shuffle_prover(params::poly_q y[MSGS][NTRU_WIDTH],
-                           params::poly_q _y[MSGS][NTRU_WIDTH], params::poly_q t[MSGS],
-                           params::poly_q _t[MSGS], params::poly_q u[MSGS], commit_t d[MSGS],
-                           params::poly_q s[MSGS], commit_t c[MSGS], params::poly_q ms[MSGS],
-                           params::poly_q _ms[MSGS], vector<params::poly_q> r[MSGS],
-                           params::poly_q rho[MSGS], comkey_t &key) {
-    vector<params::poly_q> t0(1);
-    vector<params::poly_q> _r[MSGS];
-    params::poly_q alpha[2], beta, theta[MSGS], inv[MSGS];
+static void shuffle_prover(ntru_params::poly_q y[MSGS][NTRU_WIDTH],
+                           ntru_params::poly_q _y[MSGS][NTRU_WIDTH], ntru_params::poly_q t[MSGS],
+                           ntru_params::poly_q _t[MSGS], ntru_params::poly_q u[MSGS], ntru_commit_t d[MSGS],
+                           ntru_params::poly_q s[MSGS], ntru_commit_t c[MSGS], ntru_params::poly_q ms[MSGS],
+                           ntru_params::poly_q _ms[MSGS], vector<ntru_params::poly_q> r[MSGS],
+                           ntru_params::poly_q rho, ntru_comkey_t &key) {
+    ntru_params::poly_q t0;
+    vector<ntru_params::poly_q> _r[MSGS];
+    ntru_params::poly_q alpha[2], beta, theta[MSGS], inv[MSGS];
 
     /* Prover samples theta_i and computes commitments D_i. */
     for (size_t i = 0; i < MSGS - 1; i++) {
         theta[i] = nfl::ZO_dist();
         theta[i].ntt_pow_phi();
         if (i == 0) {
-            t0[0] = theta[0] * _ms[0];
+            t0 = theta[0] * _ms[0];
         } else {
-            t0[0] = theta[i - 1] * ms[i] + theta[i] * _ms[i];
+            t0 = theta[i - 1] * ms[i] + theta[i] * _ms[i];
         }
-        t0[0].invntt_pow_invphi();
+        t0.invntt_pow_invphi();
         _r[i].resize(NTRU_WIDTH);
-        bdlop_sample_rand(_r[i]);
-        bdlop_commit(d[i], t0, key, _r[i]);
+        ntru_bdlop_sample_rand(_r[i]);
+        ntru_bdlop_commit(d[i], t0, key, _r[i]);
     }
-    t0[0] = theta[MSGS - 2] * ms[MSGS - 1];
-    t0[0].invntt_pow_invphi();
+    t0 = theta[MSGS - 2] * ms[MSGS - 1];
+    t0.invntt_pow_invphi();
     _r[MSGS - 1].resize(NTRU_WIDTH);
-    bdlop_sample_rand(_r[MSGS - 1]);
-    bdlop_commit(d[MSGS - 1], t0, key, _r[MSGS - 1]);
+    ntru_bdlop_sample_rand(_r[MSGS - 1]);
+    ntru_bdlop_commit(d[MSGS - 1], t0, key, _r[MSGS - 1]);
 
     shuffle_hash(beta, c, d, _ms, rho);
 
@@ -385,13 +381,13 @@ static void shuffle_prover(params::poly_q y[MSGS][NTRU_WIDTH],
     /* Now run \Prod_LIN instances, one for each commitment. */
     for (size_t l = 0; l < MSGS; l++) {
         if (l < MSGS - 1) {
-            t0[0] = s[l] * _ms[l];
+            t0 = s[l] * _ms[l];
         } else {
             if (MSGS & 1) {
-                params::poly_q zero = 0;
-                t0[0] = zero - beta * _ms[l];
+                ntru_params::poly_q zero = 0;
+                t0 = zero - beta * _ms[l];
             } else {
-                t0[0] = beta * _ms[l];
+                t0 = beta * _ms[l];
             }
         }
 
@@ -400,19 +396,19 @@ static void shuffle_prover(params::poly_q y[MSGS][NTRU_WIDTH],
         } else {
             alpha[0] = s[l - 1];
         }
-        alpha[1] = t0[0];
+        alpha[1] = t0;
         lin_prover(y[l], _y[l], t[l], _t[l], u[l], c[l], d[l], alpha, key, r[l],
                    _r[l]);
     }
 }
 
-static int shuffle_verifier(params::poly_q y[MSGS][NTRU_WIDTH],
-                            params::poly_q _y[MSGS][NTRU_WIDTH], params::poly_q t[MSGS],
-                            params::poly_q _t[MSGS], params::poly_q u[MSGS], commit_t d[MSGS],
-                            params::poly_q s[MSGS], commit_t c[MSGS], params::poly_q _ms[MSGS],
-                            params::poly_q rho[NTRU_SIZE], comkey_t &key) {
-    params::poly_q alpha[2], beta;
-    vector<params::poly_q> t0(1);
+static int shuffle_verifier(ntru_params::poly_q y[MSGS][NTRU_WIDTH],
+                            ntru_params::poly_q _y[MSGS][NTRU_WIDTH], ntru_params::poly_q t[MSGS],
+                            ntru_params::poly_q _t[MSGS], ntru_params::poly_q u[MSGS], ntru_commit_t d[MSGS],
+                            ntru_params::poly_q s[MSGS], ntru_commit_t c[MSGS], ntru_params::poly_q _ms[MSGS],
+                            ntru_params::poly_q rho, ntru_comkey_t &key) {
+    ntru_params::poly_q alpha[2], beta;
+    vector<ntru_params::poly_q> t0(1);
     int result = 1;
 
     shuffle_hash(beta, c, d, _ms, rho);
@@ -421,7 +417,7 @@ static int shuffle_verifier(params::poly_q y[MSGS][NTRU_WIDTH],
             t0[0] = s[l] * _ms[l];
         } else {
             if (MSGS & 1) {
-                params::poly_q zero = 0;
+                ntru_params::poly_q zero = 0;
                 t0[0] = zero - beta * _ms[l];
             } else {
                 t0[0] = beta * _ms[l];
@@ -456,40 +452,31 @@ static int shuffle_verifier(params::poly_q y[MSGS][NTRU_WIDTH],
  * @note This function extends commitments, adjusts keys, and then invokes
  *       the shuffle_prover and shuffle_verifier functions.
  */
-static int run(commit_t com[MSGS], vector<vector<params::poly_q >> m,
-               vector<vector<params::poly_q >> _m, comkey_t &key,
-               vector<params::poly_q> r[MSGS]) {
+static int run(ntru_commit_t com[MSGS], const vector<ntru_params::poly_q> &m,
+               const vector<ntru_params::poly_q> &_m, ntru_comkey_t &key,
+               vector<ntru_params::poly_q> r[MSGS]) {
     // Declare local variables for the function
-    params::poly_q ms[MSGS], _ms[MSGS];
-    commit_t d[MSGS], cs[MSGS];
-    vector<params::poly_q> t0(1);
-    params::poly_q one, t1, rho[NTRU_SIZE], s[MSGS];
-    params::poly_q y[MSGS][NTRU_WIDTH], _y[MSGS][NTRU_WIDTH], t[MSGS], _t[MSGS], u[MSGS];
-    comkey_t _key;
+    ntru_params::poly_q ms[MSGS], _ms[MSGS];
+    ntru_commit_t d[MSGS], cs[MSGS];
+    ntru_params::poly_q one, t1, rho, s[MSGS];
+    ntru_params::poly_q y[MSGS][NTRU_WIDTH], _y[MSGS][NTRU_WIDTH], t[MSGS], _t[MSGS], u[MSGS];
+    ntru_comkey_t _key;
 
-    // Extend commitments and adjust the key
-    rho[0] = 1;
-    rho[0].ntt_pow_phi();  // Convert rho[0] to NTT domain
-    for (size_t j = 1; j < NTRU_SIZE; j++) {
-        rho[j] = nfl::uniform();  // Assign random values to rho
-    }
+    rho = nfl::uniform();  // Assign random values to rho
     for (size_t i = 0; i < MSGS; i++) {
-        ms[i] = m[i][0];
+        ms[i] = m[i];
         ms[i].ntt_pow_phi();  // Convert ms[i] to NTT domain
-        _ms[i] = _m[i][0];
+        _ms[i] = _m[i];
         _ms[i].ntt_pow_phi();  // Convert _ms[i] to NTT domain
         cs[i].c1 = com[i].c1;
-        cs[i].c2.resize(1);
-        cs[i].c2[0] = com[i].c2[0] * rho[0];
-        for (size_t j = 1; j < NTRU_SIZE; j++) {
-            cs[i].c2[0] = cs[i].c2[0] + com[i].c2[j] * rho[j];
-            t1 = m[i][j];
-            t1.ntt_pow_phi();  // Convert t1 to NTT domain
-            ms[i] = ms[i] + t1 * rho[j];
-            t1 = _m[i][j];
-            t1.ntt_pow_phi();  // Convert t1 to NTT domain
-            _ms[i] = _ms[i] + t1 * rho[j];
-        }
+        cs[i].c2 = com[i].c2 * rho;
+        cs[i].c2 = cs[i].c2 + com[i].c2 * rho;
+        t1 = m[i];
+        t1.ntt_pow_phi();  // Convert t1 to NTT domain
+        ms[i] = ms[i] + t1 * rho;
+        t1 = _m[i];
+        t1.ntt_pow_phi();  // Convert t1 to NTT domain
+        _ms[i] = _ms[i] + t1 * rho;
     }
 
     // Adjust the commitment key
@@ -498,15 +485,13 @@ static int run(commit_t com[MSGS], vector<vector<params::poly_q >> m,
             _key.A1[i][j - NTRU_HEIGHT] = key.A1[i][j - NTRU_HEIGHT];
         }
     }
-    _key.A2[0][0] = 0;
-    _key.A2[0][1] = rho[0];
+    _key.A2[0] = 0;
+    _key.A2[1] = rho;
     for (size_t j = 2; j < NTRU_WIDTH; j++) {
-        _key.A2[0][j] = key.A2[0][j];
+        _key.A2[j] = key.A2[j];
     }
-    for (size_t i = 1; i < NTRU_SIZE; i++) {
-        for (size_t j = 2; j < NTRU_WIDTH; j++) {
-            _key.A2[0][j] = _key.A2[0][j] + rho[i] * key.A2[i][j];
-        }
+    for (size_t j = 2; j < NTRU_WIDTH; j++) {
+        _key.A2[j] = _key.A2[j] + rho * key.A2[j];
     }
 
     // Call the shuffle_prover function
@@ -520,34 +505,28 @@ static int run(commit_t com[MSGS], vector<vector<params::poly_q >> m,
 #ifdef MAIN
 
 static void test() {
-    comkey_t key;
-    commit_t com[MSGS];
-    vector<vector<params::poly_q>> m(MSGS), _m(MSGS);
-    vector<params::poly_q> r[MSGS];
+    ntru_comkey_t key;
+    ntru_commit_t com[MSGS];
+    vector<ntru_params::poly_q> m(MSGS), _m(MSGS);
+    vector<ntru_params::poly_q> r[MSGS];
 
     /* Generate commitment key-> */
-    bdlop_keygen(key);
+    ntru_bdlop_keygen(key);
     for (int i = 0; i < MSGS; i++) {
-        m[i].resize(NTRU_SIZE);
-        for (int j = 0; j < NTRU_SIZE; j++) {
-            m[i][j] = nfl::ZO_dist();
-        }
+        m[i] = nfl::ZO_dist();
         r[i].resize(NTRU_WIDTH);
-        bdlop_sample_rand(r[i]);
-        bdlop_commit(com[i], m[i], key, r[i]);
+        ntru_bdlop_sample_rand(r[i]);
+        ntru_bdlop_commit(com[i], m[i], key, r[i]);
     }
 
     /* Prover shuffles messages (only a circular shift for simplicity). */
     for (int i = 0; i < MSGS; i++) {
-        _m[i].resize(NTRU_SIZE);
-        for (int j = 0; j < NTRU_SIZE; j++) {
-            _m[i][j] = m[(i + 1) % MSGS][j];
-        }
+        _m[i] = m[(i + 1) % MSGS];
     }
 
     TEST_ONCE("polynomial inverse is correct")
     {
-        params::poly_q alpha[2] = {nfl::uniform(), nfl::uniform()};
+        ntru_params::poly_q alpha[2] = {nfl::uniform(), nfl::uniform()};
 
         poly_inverse(alpha[1], alpha[0]);
         alpha[0].ntt_pow_phi();
@@ -571,7 +550,7 @@ static void test() {
 }
 
 static void microbench() {
-    params::poly_q alpha[2] = {nfl::uniform(), nfl::uniform()};
+    ntru_params::poly_q alpha[2] = {nfl::uniform(), nfl::uniform()};
 
     alpha[0].ntt_pow_phi();
     alpha[1].ntt_pow_phi();
@@ -597,37 +576,31 @@ static void microbench() {
 }
 
 static void bench() {
-    comkey_t key;
-    commit_t com[MSGS];
-    vector<vector<params::poly_q >> m(MSGS), _m(MSGS);
-    vector<params::poly_q> r[MSGS];
-    params::poly_q y[NTRU_WIDTH], _y[NTRU_WIDTH], t, _t, u, alpha[2], beta;
+    ntru_comkey_t key;
+    ntru_commit_t com[MSGS];
+    vector<ntru_params::poly_q> m(MSGS), _m(MSGS);
+    vector<ntru_params::poly_q> r[MSGS];
+    ntru_params::poly_q y[NTRU_WIDTH], _y[NTRU_WIDTH], t, _t, u, alpha[2], beta;
 
     /* Generate commitment key-> */
-    bdlop_keygen(key);
+    ntru_bdlop_keygen(key);
     for (int i = 0; i < MSGS; i++) {
-        m[i].resize(NTRU_SIZE);
-        for (int j = 0; j < NTRU_SIZE; j++) {
-            m[i][j] = nfl::ZO_dist();
-        }
+        m[i] = nfl::ZO_dist();
         r[i].resize(NTRU_WIDTH);
-        bdlop_sample_rand(r[i]);
-        bdlop_commit(com[i], m[i], key, r[i]);
+        ntru_bdlop_sample_rand(r[i]);
+        ntru_bdlop_commit(com[i], m[i], key, r[i]);
     }
 
     /* Prover shuffles messages (only a circular shift for simplicity). */
     for (int i = 0; i < MSGS; i++) {
-        _m[i].resize(NTRU_SIZE);
-        for (int j = 0; j < NTRU_SIZE; j++) {
-            _m[i][j] = m[(i + 1) % MSGS][j];
-        }
+        _m[i] = m[(i + 1) % MSGS];
     }
 
     alpha[0] = nfl::ZO_dist();
     alpha[1] = nfl::ZO_dist();
     alpha[0].ntt_pow_phi();
     alpha[1].ntt_pow_phi();
-    bdlop_sample_chal(beta);
+    ntru_bdlop_sample_chal(beta);
 
     BENCH_BEGIN("linear hash")
         {
