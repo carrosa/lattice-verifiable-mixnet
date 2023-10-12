@@ -31,8 +31,9 @@ pibnd: src/pibnd.cpp ${TEST} ${BENCH} ${INCLUDES}
 
 
 ntru_bdlop: src/bdlop.cpp src/ntru.cpp ${TEST} ${BENCH} ${INCLUDES}
+	${CPP} ${CFLAGS} -c src/sample_z_small.c -o sample_z_small.o
 	${CPP} ${CFLAGS} -c src/ntru.cpp -o ntru.o
-	${CPP} ${CFLAGS} -DMAIN src/ntru_bdlop.cpp ntru.o ${TEST} ${BENCH} -o ntru_bdlop ${LIBS}
+	${CPP} ${CFLAGS} -DMAIN src/ntru_bdlop.cpp sample_z_small.o ntru.o ${TEST} ${BENCH} -o ntru_bdlop ${LIBS}
 
 ntru: src/ntru.cpp src/bdlop.cpp ${TEST} ${BENCH} ${INCLUDES}
 	${CPP} ${CFLAGS} -c src/sample_z_small.c -o sample_z_small.o

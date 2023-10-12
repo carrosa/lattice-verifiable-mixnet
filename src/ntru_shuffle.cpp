@@ -313,20 +313,14 @@ void shuffle_hash(ntru_params::poly_q &beta, ntru_commit_t c[MSGS], ntru_commit_
     for (int i = 0; i < MSGS; i++) {
         blake3_hasher_update(&hasher, (const uint8_t *) _ms[i].data(),
                              16 * NTRU_DEGREE);
-        blake3_hasher_update(&hasher, (const uint8_t *) c[i].c1.data(),
-                             16 * NTRU_DEGREE);
-        blake3_hasher_update(&hasher, (const uint8_t *) d[i].c1.data(),
-                             16 * NTRU_DEGREE);
         blake3_hasher_update(&hasher, (const uint8_t *) c[i].c2.data(),
                              16 * NTRU_DEGREE);
         blake3_hasher_update(&hasher, (const uint8_t *) d[i].c2.data(),
                              16 * NTRU_DEGREE);
     }
 
-    for (int i = 0; i < NTRU_SIZE; i++) {
-        blake3_hasher_update(&hasher, (const uint8_t *) rho.data(),
-                             16 * NTRU_DEGREE);
-    }
+    blake3_hasher_update(&hasher, (const uint8_t *) rho.data(),
+                         16 * NTRU_DEGREE);
     blake3_hasher_finalize(&hasher, hash, BLAKE3_OUT_LEN);
 
     /* Sample challenge from RNG seeded with hash. */

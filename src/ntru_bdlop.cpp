@@ -147,9 +147,8 @@ void ntru_bdlop_keygen(ntru_comkey_t &key) {
     }
 }
 
-/*
 // This function computes a commitment `com` to a message `m` using a commitment key `key` and randomness `r`.
-void ntru_bdlop_commit(ntru_commit_t &com, ntru_params::poly_q m, ntru_comkey_t &key,
+void ntru_bdlop_commit(ntru_commit_t &com, ntru_params::poly_q &m, ntru_comkey_t &key,
                        vector<ntru_params::poly_q> r) {
     // Declare a temporary polynomial `_m`.
     ntru_params::poly_q _m;
@@ -167,13 +166,6 @@ void ntru_bdlop_commit(ntru_commit_t &com, ntru_params::poly_q m, ntru_comkey_t 
         }
     }
 
-    // Resize the second component of the commitment `com.c2` to match the size of the message `m`.
-//    com.c2.resize(m.size());
-
-    // Compute the second component of the commitment:
-    // The outer loop iterates over the elements of the message `m`.
-//    for (size_t i = 0; i < m.size(); i++) {
-    // Initialize the current element of the second component of the commitment to 0.
     com.c2 = 0;
 
     // The inner loop iterates over the elements of the randomness vector `r`.
@@ -188,8 +180,7 @@ void ntru_bdlop_commit(ntru_commit_t &com, ntru_params::poly_q m, ntru_comkey_t 
 
     // Update the current element of the second component of the commitment by adding the transformed message element `_m`.
     com.c2 = com.c2 + _m;
-//    }
-}*/
+}
 
 
 // This function attempts to open a commitment on a message `m` using the provided randomness `r`, commitment key `key`, and factor `f`.
@@ -237,7 +228,7 @@ int ntru_bdlop_open(ntru_commit_t &com, ntru_params::poly_q m, ntru_comkey_t &ke
         for (size_t i = 0; i < r.size(); i++) {
             c1 = r[i];
             c1.invntt_pow_invphi();
-            if (!ntru_bdlop_test_norm(c1, 16 * SIGMA_C)) {
+            if (!ntru_bdlop_test_norm(c1, 16 * NTRU_SIGMA_C)) {
                 cout << "ERROR: Commit opening failed norm test" << endl;
                 result = false;
                 break;
@@ -249,10 +240,9 @@ int ntru_bdlop_open(ntru_commit_t &com, ntru_params::poly_q m, ntru_comkey_t &ke
     return result;
 }
 
-
 // This function computes a commitment `com` to a ciphertext `c` using the provided commitment key `key` and randomness `r`.
-void ntru_bdlop_commit(ntru_commit_t &com, ntru_params::poly_q &c, ntru_comkey_t &key,
-                       vector<ntru_params::poly_q> r) {
+void ntru_bdlop_commit_c(ntru_commit_t &com, ntru_params::poly_q &c, ntru_comkey_t &key,
+                         vector<ntru_params::poly_q> r) {
     // Declare a temporary polynomial `_m` (though it's not used in the provided code).
     ntru_params::poly_q _m;
 
@@ -346,7 +336,8 @@ static void test2() {
 
     // Define randomness vectors and factors.
     vector<ntru_params::poly_q> r(WIDTH), s(WIDTH);
-    ntru_params::poly_q t, f, one;
+    ntru_params::poly_q f, one;
+//    ntru_params::poly_q t;
 
     // Define messages.
     ntru_params::poly_q _m = 0, m = nfl::uniform();
@@ -414,15 +405,13 @@ static void test2() {
         }
         ntru_bdlop_commit(_com, rho, key, r);
         m = m - rho;
-        m = m - rho;
         com.c1 = com.c1 - _com.c1;
         com.c2 = com.c2 - _com.c2;
 
         // Test if the commitment can be opened after linear operations.
         TEST_ASSERT(ntru_bdlop_open(com, m, key, s, f) == 1, end);
-
+        // TODO: Error is between these todos
         // Restore messages and commitments.
-        m = m + rho;
         m = m + rho;
         com.c1 = com.c1 + _com.c1;
         com.c2 = com.c2 + _com.c2;
@@ -430,10 +419,8 @@ static void test2() {
         // Additional operations and tests for linearity.
         rho = nfl::uniform();
         _m = m;
-        t = m;
         _m.ntt_pow_phi();
-        t.ntt_pow_phi();
-        _m = _m * rho + t * rho;
+        _m = _m * rho;
         _m.invntt_pow_invphi();
         c.c1 = com.c1;
         c.c2 = com.c2 * rho;
@@ -445,10 +432,11 @@ static void test2() {
         for (size_t j = 0; j < WIDTH; j++) {
             _key.A2[j] = key.A2[j];
         }
-            _key.A2[NTRU_HEIGHT] = rho;
-            for (size_t j = NTRU_SIZE + NTRU_HEIGHT; j < NTRU_WIDTH; j++) {
-                _key.A2[j] = _key.A2[j] + rho * key.A2[j];
+        _key.A2[NTRU_HEIGHT] = rho;
+        for (size_t j = NTRU_SIZE + NTRU_HEIGHT; j < NTRU_WIDTH; j++) {
+            _key.A2[j] = _key.A2[j] + rho * key.A2[j];
         }
+        // TODO: Error is between these todos
 
         // Test if the commitment can be opened after the additional operations.
         TEST_ASSERT(ntru_bdlop_open(c, _m, _key, s, f) == 1, end);
@@ -515,7 +503,7 @@ static void bench() {
     BENCH_BEGIN("ntru_bdlop_commit (ciphertext)")
         {
             ntru_encrypt(c, pk, _m);
-            BENCH_ADD(ntru_bdlop_commit(com, c, key, r));
+            BENCH_ADD(ntru_bdlop_commit_c(com, c, key, r));
         }
     BENCH_END;
 }
