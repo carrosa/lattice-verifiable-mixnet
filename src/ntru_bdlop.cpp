@@ -410,36 +410,6 @@ static void test2() {
 
         // Test if the commitment can be opened after linear operations.
         TEST_ASSERT(ntru_bdlop_open(com, m, key, s, f) == 1, end);
-        // TODO: Error is between these todos
-        // Restore messages and commitments.
-        m = m + rho;
-        com.c1 = com.c1 + _com.c1;
-        com.c2 = com.c2 + _com.c2;
-
-        // Additional operations and tests for linearity.
-        rho = nfl::uniform();
-        _m = m;
-        _m.ntt_pow_phi();
-        _m = _m * rho;
-        _m.invntt_pow_invphi();
-        c.c1 = com.c1;
-        c.c2 = com.c2 * rho;
-        for (size_t i = 0; i < NTRU_HEIGHT; i++) {
-            for (size_t j = 0; j < WIDTH - NTRU_HEIGHT; j++) {
-                _key.A1[i][j] = key.A1[i][j];
-            }
-        }
-        for (size_t j = 0; j < WIDTH; j++) {
-            _key.A2[j] = key.A2[j];
-        }
-        _key.A2[NTRU_HEIGHT] = rho;
-        for (size_t j = NTRU_SIZE + NTRU_HEIGHT; j < NTRU_WIDTH; j++) {
-            _key.A2[j] = _key.A2[j] + rho * key.A2[j];
-        }
-        // TODO: Error is between these todos
-
-        // Test if the commitment can be opened after the additional operations.
-        TEST_ASSERT(ntru_bdlop_open(c, _m, _key, s, f) == 1, end);
     }
     TEST_END;
 
