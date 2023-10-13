@@ -240,30 +240,6 @@ int ntru_bdlop_open(ntru_commit_t &com, ntru_params::poly_q m, ntru_comkey_t &ke
     return result;
 }
 
-// This function computes a commitment `com` to a ciphertext `c` using the provided commitment key `key` and randomness `r`.
-void ntru_bdlop_commit_c(ntru_commit_t &com, ntru_params::poly_q &c, ntru_comkey_t &key,
-                         vector<ntru_params::poly_q> r) {
-    // Declare a temporary polynomial `_m` (though it's not used in the provided code).
-    ntru_params::poly_q _m;
-
-    // Compute the first component of the commitment using the matrix `A1` from the commitment key and a subset of the randomness vector `r`.
-    com.c1 = r[0];
-    for (size_t i = 0; i < NTRU_HEIGHT; i++) {
-        for (size_t j = 0; j < r.size() - NTRU_HEIGHT; j++) {
-            com.c1 = com.c1 + key.A1[i][j] * r[j + NTRU_HEIGHT];
-        }
-    }
-
-    // Compute the first element of the second component of the commitment.
-    // It's a combination of randomness, elements from the matrix `A2` of the commitment key, and the `u` component of the ciphertext `c`.
-    com.c2 = r[1] + key.A2[1] * r[3] + c;
-
-    // Compute the second element of the second component of the commitment.
-    // It's a combination of randomness, elements from the matrix `A2` of the commitment key, and the `v` component of the ciphertext `c`.
-    com.c2 = r[2] + key.A2[2] * r[3] + c;
-}
-
-
 #ifdef MAIN
 
 // Test function for single message commitments.
