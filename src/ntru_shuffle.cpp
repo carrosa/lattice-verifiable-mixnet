@@ -266,10 +266,10 @@ static int lin_verifier(ntru_params::poly_q z[NTRU_WIDTH], ntru_params::poly_q _
     for (int i = 0; i < NTRU_WIDTH; i++) {
         v = z[i];
         v.invntt_pow_invphi();
-        result &= ntru_bdlop_test_norm(v, 4 * NTRU_SIGMA_C * NTRU_SIGMA_C);
+        result &= ntru_bdlop_test_norm(v, NTRU_SIGMA_C * NTRU_SIGMA_C);
         v = _z[i];
         v.invntt_pow_invphi();
-        result &= ntru_bdlop_test_norm(v, 4 * NTRU_SIGMA_C * NTRU_SIGMA_C);
+        result &= ntru_bdlop_test_norm(v, NTRU_SIGMA_C * NTRU_SIGMA_C);
     }
 
     /* Verifier computes A1z and A1z'. */

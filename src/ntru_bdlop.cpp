@@ -56,9 +56,11 @@ bool ntru_bdlop_test_norm(ntru_params::poly_q r, uint64_t sigma_sqr) {
 
     // Compute the bound as (4 * sigma * sqrt(N))^2 = 16 * sigma^2 * N.
     uint64_t bound = 16 * sigma_sqr * ntru_params::poly_q::degree;
-
+//    std::cout << "\n\n\nBOUND:\n" << bound << "\n";
+//    gmp_printf("\n\nNORM:\n %Zd\n", norm);
     // Compare the computed norm with the bound. If the norm is less than the bound, `result` will be true.
     int result = mpz_cmp_ui(norm, bound) < 0;
+//    std::cout << "\n\nRESULT:\n" << result << "\n\n";
 
     // Clear the memory used by the variables `norm`, `qDivBy2`, and `tmp`.
     mpz_clears(norm, qDivBy2, tmp, nullptr);
@@ -316,7 +318,7 @@ static void test2() {
 //    ntru_params::poly_q t;
 
     // Define messages.
-    ntru_params::poly_q _m = 0, m = nfl::uniform();
+    ntru_params::poly_q m = nfl::uniform();
 
     TEST_BEGIN("commitment for multiple messages can be generated and opened") {
         // Sample random values.
