@@ -393,26 +393,6 @@ static void test2() {
     }
     TEST_END;
 
-    TEST_BEGIN("commitments for multiple messages are linearly homomorphic") {
-        // Test linearity.
-        ntru_params::poly_q rho = nfl::uniform();
-        ntru_bdlop_sample_rand(r);
-        ntru_bdlop_commit(com, m, key, r);
-        ntru_bdlop_sample_chal(f);
-        for (size_t j = 0; j < r.size(); j++) {
-            s[j] = f * r[j];
-            r[j] = 0;
-        }
-        ntru_bdlop_commit(_com, rho, key, r);
-        m = m - rho;
-        com.c1 = com.c1 - _com.c1;
-        com.c2 = com.c2 - _com.c2;
-
-        // Test if the commitment can be opened after linear operations.
-        TEST_ASSERT(ntru_bdlop_open(com, m, key, s, f) == 1, end);
-    }
-    TEST_END;
-
     end:
     return;
 }

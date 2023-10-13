@@ -243,8 +243,8 @@ static void lin_prover(ntru_params::poly_q y[NTRU_WIDTH], ntru_params::poly_q _y
             y[i] = y[i] + tmp[i];
             _y[i] = _y[i] + _tmp[i];
         }
-        rej0 = rej_sampling(y, tmp, SIGMA_C * SIGMA_C);
-        rej1 = rej_sampling(_y, _tmp, SIGMA_C * SIGMA_C);
+        rej0 = rej_sampling(y, tmp, NTRU_SIGMA_C * NTRU_SIGMA_C);
+        rej1 = rej_sampling(_y, _tmp, NTRU_SIGMA_C * NTRU_SIGMA_C);
     } while (rej0 || rej1);
 
     for (size_t i = 0; i < ntru_params::poly_q::degree; i++) {
@@ -266,10 +266,10 @@ static int lin_verifier(ntru_params::poly_q z[NTRU_WIDTH], ntru_params::poly_q _
     for (int i = 0; i < NTRU_WIDTH; i++) {
         v = z[i];
         v.invntt_pow_invphi();
-        result &= ntru_bdlop_test_norm(v, 4 * SIGMA_C * SIGMA_C);
+        result &= ntru_bdlop_test_norm(v, 4 * NTRU_SIGMA_C * NTRU_SIGMA_C);
         v = _z[i];
         v.invntt_pow_invphi();
-        result &= ntru_bdlop_test_norm(v, 4 * SIGMA_C * SIGMA_C);
+        result &= ntru_bdlop_test_norm(v, 4 * NTRU_SIGMA_C * NTRU_SIGMA_C);
     }
 
     /* Verifier computes A1z and A1z'. */
@@ -446,8 +446,8 @@ static int shuffle_verifier(ntru_params::poly_q y[MSGS][NTRU_WIDTH],
  * @note This function extends commitments, adjusts keys, and then invokes
  *       the shuffle_prover and shuffle_verifier functions.
  */
-static int run(ntru_commit_t com[MSGS], const vector<ntru_params::poly_q> &m,
-               const vector<ntru_params::poly_q> &_m, ntru_comkey_t &key,
+static int run(ntru_commit_t com[MSGS], vector<ntru_params::poly_q> m,
+               vector<ntru_params::poly_q> _m, ntru_comkey_t &key,
                vector<ntru_params::poly_q> r[MSGS]) {
     // Declare local variables for the function
     ntru_params::poly_q ms[MSGS], _ms[MSGS];
