@@ -420,18 +420,6 @@ static void bench() {
             BENCH_ADD(ntru_bdlop_open(com, m, key, s, f));
         }
     BENCH_END;
-
-    // Generate BGV encryption keys and sample a message.
-    ntru_keygen(pk, sk);
-    ntru_sample_message(_m);
-
-    // Benchmark commitment generation for ciphertexts.
-    BENCH_BEGIN("ntru_bdlop_commit (ciphertext)")
-        {
-            ntru_encrypt(c, pk, _m);
-            BENCH_ADD(ntru_bdlop_commit_c(com, c, key, r));
-        }
-    BENCH_END;
 }
 
 // Main function.
