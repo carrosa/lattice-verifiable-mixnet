@@ -169,19 +169,4 @@ void ntru_sample_message(ntru_params::poly_p &r);
 void ntru_encrypt(ntru_params::poly_q &c, ntru_params::poly_q &pk, ntru_params::poly_p &m);
 
 
-
-// Maybe remove
-void bdlop_sample_rand(vector<ntru_params::poly_q> &r);
-
-void bdlop_sample_chal(ntru_params::poly_q &f);
-
-bool bdlop_test_norm(ntru_params::poly_q r, uint64_t sigma_sqr);
-
-void bdlop_commit(ntru_commit2_t &com, vector<ntru_params::poly_q> m, ntru_comkey2_t &key, vector<ntru_params::poly_q> r);
-
-int bdlop_open(ntru_commit2_t &com, vector<ntru_params::poly_q> m, ntru_comkey2_t &key, vector<ntru_params::poly_q> r, ntru_params::poly_q &f);
-
-void bdlop_keygen(ntru_comkey2_t &key);
-
-
 #endif
