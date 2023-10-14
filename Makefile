@@ -37,8 +37,8 @@ ntru: src/ntru.cpp ${TEST} ${BENCH} ${INCLUDES}
 	${CPP} ${CFLAGS} -c src/sample_z_small.c -o sample_z_small.o
 	${CPP} ${CFLAGS} -DMAIN src/ntru.cpp sample_z_small.o ${TEST} ${BENCH} ${BLAKE3} -o ntru ${LIBS}
 
-ntru_pismall: src/ntru_bdlop.cpp src/ntru_pismall.cpp ${TEST} ${BENCH} ${INCLUDES}
-	${CPP} ${CFLAGS} -DSIZE=3 -c src/ntru_bdlop.cpp -o ntru_bdlop.o
+ntru_pismall: src/bdlop.cpp src/ntru_pismall.cpp ${TEST} ${BENCH} ${INCLUDES}
+	${CPP} ${CFLAGS} -DSIZE=3 -c src/bdlop.cpp -o ntru_bdlop.o
 	${CPP} ${CFLAGS} -DSIZE=3 -DMAIN src/ntru_pismall.cpp ntru_bdlop.o ${TEST} ${BENCH} ${BLAKE3} -o ntru_pismall ${LIBS}
 
 ntru_shuffle: src/ntru_shuffle.cpp src/ntru_bdlop.cpp ${TEST} ${BENCH} ${INCLUDES}
