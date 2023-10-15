@@ -8,24 +8,24 @@ NTRU = {
 }
 
 BDLOP = {
-    "bdlop_keygen": 40208,
-    "bdlop_sample_chal": 55356,
-    "bdlop_sample_rand": 141505,
-    "bdlop_commit": 69991,
-    "bdlop_open": 872940,
+    "bdlop_keygen": 117564,
+    "bdlop_sample_chal": 163698,
+    "bdlop_sample_rand": 413910,
+    "bdlop_commit": 204523,
+    "bdlop_open": 2551079,
 }
 
 PISMALL = {
-    "pismall_setup": 1687136462,
-    "pismall_prover": 67074041350,
-    "pismall_verifier": 3408190269,
+    "pismall_setup": 4570786660,
+    "pismall_prover": 183613860009,
+    "pismall_verifier": 9895237671,
 }
 
 SHUFFLE = {
-    "shuffle_linear_hash": 152496,
-    "shuffle_linear_proof": 18287390,
-    "shuffle_linear_verifier": 2122465,
-    "shuffle_proof": 21493411889,
+    "shuffle_linear_hash": 430810,
+    "shuffle_linear_proof": 51794475,
+    "shuffle_linear_verifier": 5842662,
+    "shuffle_proof": 60409852302,
 }
 
 PROCESSOR = {
@@ -40,7 +40,7 @@ PROCESSOR = {
 
 
 def in_ms(value, freq):
-    return "{:.20f}".format(value / (freq / 1000))
+    return "{:.3f}".format(value / (freq / 1000))
 
 
 def print_times():
