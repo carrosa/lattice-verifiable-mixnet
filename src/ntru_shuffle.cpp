@@ -32,30 +32,30 @@ static void lin_hash(ntru_params::poly_q &beta, ntru_comkey_t &key, ntru_commit_
     for (size_t i = 0; i < NTRU_HEIGHT; i++) {
         for (int j = 0; j < NTRU_WIDTH - NTRU_HEIGHT; j++) {
             blake3_hasher_update(&hasher, (const uint8_t *) key.A1[i][j].data(),
-                                 16 * NTRU_DEGREE);
+                                 8 * NTRU_DEGREE);
         }
     }
     for (size_t j = 0; j < NTRU_WIDTH; j++) {
         blake3_hasher_update(&hasher, (const uint8_t *) key.A2[j].data(),
-                             16 * NTRU_DEGREE);
+                             8 * NTRU_DEGREE);
     }
 
     /* Hash alpha, beta from linear relation. */
     for (size_t i = 0; i < 2; i++) {
         blake3_hasher_update(&hasher, (const uint8_t *) alpha[i].data(),
-                             16 * NTRU_DEGREE);
+                             8 * NTRU_DEGREE);
     }
 
-    blake3_hasher_update(&hasher, (const uint8_t *) x.c1.data(), 16 * NTRU_DEGREE);
-    blake3_hasher_update(&hasher, (const uint8_t *) y.c1.data(), 16 * NTRU_DEGREE);
+    blake3_hasher_update(&hasher, (const uint8_t *) x.c1.data(), 8 * NTRU_DEGREE);
+    blake3_hasher_update(&hasher, (const uint8_t *) y.c1.data(), 8 * NTRU_DEGREE);
     blake3_hasher_update(&hasher, (const uint8_t *) x.c2.data(),
-                         16 * NTRU_DEGREE);
+                         8 * NTRU_DEGREE);
     blake3_hasher_update(&hasher, (const uint8_t *) y.c2.data(),
-                         16 * NTRU_DEGREE);
+                         8 * NTRU_DEGREE);
 
-    blake3_hasher_update(&hasher, (const uint8_t *) u.data(), 16 * NTRU_DEGREE);
-    blake3_hasher_update(&hasher, (const uint8_t *) t.data(), 16 * NTRU_DEGREE);
-    blake3_hasher_update(&hasher, (const uint8_t *) _t.data(), 16 * NTRU_DEGREE);
+    blake3_hasher_update(&hasher, (const uint8_t *) u.data(), 8 * NTRU_DEGREE);
+    blake3_hasher_update(&hasher, (const uint8_t *) t.data(), 8 * NTRU_DEGREE);
+    blake3_hasher_update(&hasher, (const uint8_t *) _t.data(), 8 * NTRU_DEGREE);
 
     blake3_hasher_finalize(&hasher, hash, BLAKE3_OUT_LEN);
 
@@ -312,15 +312,15 @@ void shuffle_hash(ntru_params::poly_q &beta, ntru_commit_t c[MSGS], ntru_commit_
 
     for (int i = 0; i < MSGS; i++) {
         blake3_hasher_update(&hasher, (const uint8_t *) _ms[i].data(),
-                             16 * NTRU_DEGREE);
+                             8 * NTRU_DEGREE);
         blake3_hasher_update(&hasher, (const uint8_t *) c[i].c2.data(),
-                             16 * NTRU_DEGREE);
+                             8 * NTRU_DEGREE);
         blake3_hasher_update(&hasher, (const uint8_t *) d[i].c2.data(),
-                             16 * NTRU_DEGREE);
+                             8 * NTRU_DEGREE);
     }
 
     blake3_hasher_update(&hasher, (const uint8_t *) rho.data(),
-                         16 * NTRU_DEGREE);
+                         8 * NTRU_DEGREE);
     blake3_hasher_finalize(&hasher, hash, BLAKE3_OUT_LEN);
 
     /* Sample challenge from RNG seeded with hash. */
@@ -490,10 +490,62 @@ static int run(ntru_commit_t com[MSGS], vector<ntru_params::poly_q> m,
 
     // Call the shuffle_prover function
     shuffle_prover(y, _y, t, _t, u, d, s, cs, ms, _ms, r, rho, _key);
+    //return 1;
 
     // Call and return the result of the shuffle_verifier function
     return shuffle_verifier(y, _y, t, _t, u, d, s, cs, _ms, rho, _key);
 }
+
+static void run2(ntru_commit_t com[MSGS], vector<ntru_params::poly_q> m,
+               vector<ntru_params::poly_q> _m, ntru_comkey_t &key,
+               vector<ntru_params::poly_q> r[MSGS]) {
+    // Declare local variables for the function
+    ntru_params::poly_q ms[MSGS], _ms[MSGS];
+    ntru_commit_t d[MSGS], cs[MSGS];
+    ntru_params::poly_q one, t1, rho, s[MSGS];
+    ntru_params::poly_q y[MSGS][NTRU_WIDTH], _y[MSGS][NTRU_WIDTH], t[MSGS], _t[MSGS], u[MSGS];
+    ntru_comkey_t _key;
+
+    rho = nfl::uniform();  // Assign random values to rho
+    for (size_t i = 0; i < MSGS; i++) {
+        ms[i] = m[i];
+        ms[i].ntt_pow_phi();  // Convert ms[i] to NTT domain
+        _ms[i] = _m[i];
+        _ms[i].ntt_pow_phi();  // Convert _ms[i] to NTT domain
+        cs[i].c1 = com[i].c1;
+        cs[i].c2 = com[i].c2 * rho;
+        cs[i].c2 = cs[i].c2 + com[i].c2 * rho;
+        t1 = m[i];
+        t1.ntt_pow_phi();  // Convert t1 to NTT domain
+        ms[i] = ms[i] + t1 * rho;
+        t1 = _m[i];
+        t1.ntt_pow_phi();  // Convert t1 to NTT domain
+        _ms[i] = _ms[i] + t1 * rho;
+    }
+
+    // Adjust the commitment key
+    for (size_t i = 0; i < NTRU_HEIGHT; i++) {
+        for (size_t j = NTRU_HEIGHT; j < NTRU_WIDTH; j++) {
+            _key.A1[i][j - NTRU_HEIGHT] = key.A1[i][j - NTRU_HEIGHT];
+        }
+    }
+    _key.A2[0] = 0;
+    _key.A2[1] = rho;
+    for (size_t j = 2; j < NTRU_WIDTH; j++) {
+        _key.A2[j] = key.A2[j];
+    }
+    for (size_t j = 2; j < NTRU_WIDTH; j++) {
+        _key.A2[j] = _key.A2[j] + rho * key.A2[j];
+    }
+
+    // Call the shuffle_prover function
+    shuffle_prover(y, _y, t, _t, u, d, s, cs, ms, _ms, r, rho, _key);
+    //return 1;
+
+    // Call and return the result of the shuffle_verifier function
+//    return shuffle_verifier(y, _y, t, _t, u, d, s, cs, _ms, rho, _key);
+}
+
 
 
 #ifdef MAIN
@@ -595,7 +647,6 @@ static void bench() {
     alpha[0].ntt_pow_phi();
     alpha[1].ntt_pow_phi();
     ntru_bdlop_sample_chal(beta);
-
     BENCH_BEGIN("linear hash")
         {
             BENCH_ADD(lin_hash(beta, key, com[0], com[1], alpha, u, t, _t));
@@ -616,6 +667,7 @@ static void bench() {
     BENCH_END;
 
     BENCH_SMALL("shuffle-proof (N messages)", run(com, m, _m, key, r));
+    BENCH_SMALL("shuffle proof (only proof)", run2(com, m, _m, key, r));
 }
 
 int main(int argc, char *argv[]) {

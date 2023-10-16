@@ -25,7 +25,8 @@ SHUFFLE = {
     "shuffle_linear_hash": 430810,
     "shuffle_linear_proof": 51794475,
     "shuffle_linear_verifier": 5842662,
-    "shuffle_proof": 60409852302,
+    "shuffle_proof_and_verify": 60409852302,
+    "shuffle_proof": 54084003493,
 }
 
 PROCESSOR = {
@@ -33,8 +34,9 @@ PROCESSOR = {
     "addr_size": {"physical": 39, "virtual": 48},
     "byte_order": "Little Endian",
     "model_name": "11th Gen Inter(R) Core(TM) i5-1145G7 @ 2.60GHz",
-    "hertz": 2600000000,
+    # "hertz": 2600000000,
     # "hertz": 1500000000,
+    "hertz": 3600000000,
     "turbo": False,
 }
 
