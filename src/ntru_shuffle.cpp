@@ -15,7 +15,7 @@
 /* Private definitions                                                        */
 /*============================================================================*/
 
-#define MSGS         10
+#define MSGS         1000
 
 
 // Input til shuffle er 1 mld ikke 2.
